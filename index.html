@@ -1,0 +1,1397 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이든 수능 메타인지 분석 시스템</title>
+<style>
+:root{
+  --navy:#1e3a8a; --navy-deep:#172554; --blue:#2563eb;
+  --amber:#f59e0b; --red:#ef4444; --slate:#64748b; --slate-d:#334155;
+  --ink:#1f2937; --muted:#64748b; --line:#e2e8f0; --line-2:#cbd5e1;
+  --bg:#eef2f7; --panel:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --ok:#16a34a; --shadow:0 8px 24px rgba(15,23,42,.10);
+  --paper-line:#94a3b8;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1220; --panel:#131c2e; --soft:#0f1728; --soft-2:#182236;
+    --ink:#e5ecf6; --muted:#93a4bd; --line:#26324a; --line-2:#32405c;
+    --shadow:0 8px 24px rgba(0,0,0,.45); }
+}
+:root[data-theme="dark"]{ --bg:#0b1220; --panel:#131c2e; --soft:#0f1728; --soft-2:#182236;
+  --ink:#e5ecf6; --muted:#93a4bd; --line:#26324a; --line-2:#32405c; --shadow:0 8px 24px rgba(0,0,0,.45); }
+:root[data-theme="light"]{ --bg:#eef2f7; --panel:#fff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --ink:#1f2937; --muted:#64748b; --line:#e2e8f0; --line-2:#cbd5e1; --shadow:0 8px 24px rgba(15,23,42,.10); }
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR",sans-serif;
+  font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:13px}
+h1,h2,h3,h4{margin:0}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- App chrome ---------- */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(100deg,var(--navy-deep),var(--navy));
+  color:#fff; padding:12px 20px; display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(15,23,42,.25);
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand .logo{width:34px;height:34px;border-radius:9px;background:#fff2;display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+.brand b{font-size:16px;font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+.brand small{display:block;font-size:10.5px;opacity:.72;font-weight:500;letter-spacing:.3px}
+.appbar .spacer{flex:1}
+.tabs{display:flex;gap:6px;background:#ffffff18;padding:4px;border-radius:11px}
+.tab{border:none;background:transparent;color:#dbe4f5;font-weight:700;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:.15s}
+.tab.active{background:#fff;color:var(--navy)}
+.tab:hover:not(.active){color:#fff}
+.icon-btn{border:1px solid #ffffff33;background:#ffffff12;color:#fff;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:15px}
+.icon-btn:hover{background:#ffffff22}
+
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px 80px}
+.view{display:none}
+.view.active{display:block}
+
+/* ---------- Controls ---------- */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px}
+.subject-pills{display:flex;flex-wrap:wrap;gap:7px}
+.spill{border:1.5px solid var(--line-2);background:var(--panel);color:var(--muted);font-weight:700;padding:8px 15px;border-radius:999px;cursor:pointer;transition:.15s;font-size:13.5px}
+.spill:hover{border-color:var(--navy)}
+.spill.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn{border:none;border-radius:9px;padding:10px 18px;font-weight:800;font-size:13.5px;cursor:pointer;transition:.15s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-deep)}
+.btn-ghost{background:var(--soft-2);color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--navy)}
+.btn-amber{background:var(--amber);color:#3a2606}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px;margin-bottom:18px}
+.card>h3{font-size:15px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.card>h3 .badge-n{background:var(--navy);color:#fff;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px}
+.hint{color:var(--muted);font-size:12px;line-height:1.5}
+.hint b{color:var(--ink)}
+
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px 14px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:11.5px;font-weight:700;color:var(--muted)}
+.f input,.f select,.f textarea{border:1px solid var(--line-2);background:var(--soft);color:var(--ink);border-radius:8px;padding:8px 10px;outline:none}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--navy);background:var(--panel);box-shadow:0 0 0 3px #1e3a8a1f}
+
+/* ---------- Question grid ---------- */
+.qtable-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table.qgrid{border-collapse:collapse;width:100%;min-width:720px}
+.qgrid th{background:var(--soft-2);color:var(--slate-d);font-size:11.5px;font-weight:800;padding:8px 6px;border-bottom:1px solid var(--line-2);position:sticky;top:0}
+.qgrid td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:center;vertical-align:middle}
+.qgrid tr:nth-child(even) td{background:var(--soft)}
+.qgrid .qn{font-weight:800;color:var(--navy);width:38px}
+.qgrid select.p-sel{width:52px;padding:5px 3px;border:1px solid var(--line-2);border-radius:6px;background:var(--panel);color:var(--ink);text-align:center}
+.chk{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:6px;font-weight:800;font-size:12px;color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden}
+.seg label{cursor:pointer;padding:5px 0;width:30px;font-size:12px;font-weight:800;color:var(--muted);border-right:1px solid var(--line);user-select:none;transition:.1s}
+.seg label:last-child{border-right:none}
+.seg input{display:none}
+.seg label.hwak.on{background:var(--blue);color:#fff}
+.seg label.jjik.on{background:var(--slate);color:#fff}
+.seg label.si.on{background:var(--amber);color:#fff}
+.seg label.sil.on{background:var(--red);color:#fff}
+.seg label.mo.on{background:var(--slate-d);color:#fff}
+.qgrid select.area-sel,.qgrid select.cause-sel{max-width:150px;padding:5px;border:1px solid var(--line-2);border-radius:6px;background:var(--panel);color:var(--ink)}
+.qgrid input.type-in{width:110px;padding:5px 6px;border:1px solid var(--line-2);border-radius:6px;background:var(--panel);color:var(--ink)}
+.cause-cell.dim{opacity:.35;pointer-events:none}
+
+.tally{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.qlegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:9px;background:var(--soft-2);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:12px}
+.qlegend .qlrow{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--ink)}
+.qlegend .qlrow .b2{flex:0 0 auto;width:23px;height:23px;border-radius:7px;color:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:900}
+.qlegend .qlrow .tag{font-weight:800;color:var(--navy);display:block;font-size:11.8px;margin-bottom:1px}
+.tchip{display:flex;align-items:center;gap:6px;background:var(--soft-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:12.5px}
+.tchip i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.warn{color:var(--red);font-weight:800}
+
+/* ---------- Report ---------- */
+#reportOut{margin-top:8px}
+.sheet{background:#fff;color:#1f2937;border-radius:12px;box-shadow:var(--shadow);margin:0 auto 22px;max-width:900px;padding:30px 38px 22px;border:1px solid #e2e8f0;display:flex;flex-direction:column;min-height:0}
+.sheet *{color-scheme:light}
+.sheet-body{flex:1}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#64748b}
+.rhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid var(--navy);padding-bottom:11px;margin-bottom:20px}
+.rhead .rtitle-wrap{display:flex;flex-direction:column;gap:3px}
+.rhead .rtitle{font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.5px}
+.rhead .rmeta{font-size:11.5px;color:#475569;text-align:right;line-height:1.65}
+.rhead .rmeta b{color:#0f172a}
+.subtag{display:inline-block;background:var(--navy);color:#fff;font-weight:800;font-size:11.5px;padding:4px 14px;border-radius:999px;letter-spacing:.02em}
+
+.sec-title{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:900;color:#0f172a;margin:22px 0 10px;break-after:avoid}
+.sec-title .n{background:var(--navy);color:#fff;width:23px;height:23px;border-radius:7px;display:grid;place-items:center;font-size:12.5px;flex:0 0 auto}
+.sec-note{background:#f1f5f9;border-left:3px solid var(--navy);padding:9px 13px;border-radius:0 8px 8px 0;font-size:12.3px;color:#475569;margin-bottom:14px}
+
+table.rtab{border-collapse:collapse;width:100%;font-size:12.3px;margin:6px 0}
+.rtab th,.rtab td{border:1px solid #dbe2ea;padding:6.5px 8px;text-align:center}
+.rtab th{background:#eef1f6;font-weight:800;color:#334155;font-size:11.3px;letter-spacing:.01em}
+.rtab td.l{text-align:left}
+.rtab tbody tr:nth-child(even) td{background:#f8fafc}
+.hl{background:#fef3c7!important;font-weight:800;font-family:Georgia,'Times New Roman',serif;font-variant-numeric:tabular-nums}
+.num-serif{font-family:Georgia,'Times New Roman',serif;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.panel-lite{border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;break-inside:avoid}
+.panel-lite h4{font-size:12.3px;font-weight:800;color:#334155;margin-bottom:6px;text-align:center}
+.chart-title{font-size:11.8px;font-weight:800;color:#475569;text-align:center;margin-bottom:2px}
+
+.summ-list{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:7px}
+.summ-list li{display:flex;align-items:center;gap:9px;font-size:13.3px;break-inside:avoid}
+.summ-list .dot{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:11px;flex:0 0 auto}
+.summ-list b{color:var(--navy);font-family:Georgia,'Times New Roman',serif;font-variant-numeric:tabular-nums}
+
+.coach{border:1px solid #e2e8f0;border-radius:10px;padding:6px 0;margin-top:4px}
+.coach .citem{padding:10px 14px;border-bottom:1px solid #eef2f7;font-size:12.6px;line-height:1.62;color:#334155;break-inside:avoid}
+.coach .citem:last-child{border-bottom:none}
+.coach .citem b{color:var(--navy)}
+.coach .tag{display:inline-block;background:#eef2ff;color:var(--navy);font-weight:800;font-size:10.8px;padding:2px 8px;border-radius:6px;margin-right:7px}
+.mini{font-size:11.5px;color:#64748b}
+.pctwrap{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.pctrow{display:flex;justify-content:space-between;gap:8px}
+.pctrow .bar{flex:1;height:8px;background:#eef2f7;border-radius:4px;overflow:hidden;align-self:center}
+.pctrow .bar i{display:block;height:100%;background:var(--navy);border-radius:4px}
+
+.ins2026{border:1px solid #dbe4f5;background:#f7f9fe;border-radius:10px;padding:13px 16px;font-size:12.4px;line-height:1.66;color:#334155}
+.ins2026 h4{color:var(--navy);font-size:12.8px;margin:9px 0 4px}
+.ins2026 h4:first-child{margin-top:0}
+.ins2026 ul{margin:4px 0 4px 2px;padding-left:16px}
+.ins2026 li{margin-bottom:3px}
+
+/* 페이지마다 반복되는 하단 밴드 — 전문 보고서의 러닝 푸터 */
+.rfootband{margin-top:auto;padding-top:11px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:10.3px;color:#94a3b8}
+.rfootband .rf-brand{font-weight:800;color:#64748b}
+.rfootband .rf-brand b{color:var(--navy)}
+.rfootband .rf-meta{text-align:right}
+
+.empty{background:var(--panel);border:2px dashed var(--line-2);border-radius:14px;padding:44px;text-align:center;color:var(--muted)}
+.empty .big{font-size:38px;margin-bottom:10px}
+
+/* Cover */
+.cover{text-align:center;padding:40px 40px 8px;position:relative}
+.cover .cover-mark{display:inline-flex;align-items:center;gap:8px;margin-bottom:22px}
+.cover .cover-mark .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--navy),#3b5fc4);display:grid;place-items:center;font-size:15px}
+.cover .cover-mark b{font-size:14.5px;font-weight:900;color:var(--navy-deep);letter-spacing:-.2px}
+.cover .kick{color:#64748b;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.cover h1{font-size:33px;font-weight:900;color:var(--navy-deep);letter-spacing:-1px;line-height:1.22;text-wrap:balance}
+.cover .rule{width:46px;height:3px;background:var(--navy);border-radius:2px;margin:20px auto}
+.cover .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:20px 0 26px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+.cover .pillars div{padding:16px 10px;border-right:1px solid #e2e8f0}
+.cover .pillars div:last-child{border-right:none}
+.cover .pillars .t{font-size:12.5px;color:#64748b;font-weight:600}
+.cover .pillars .b{font-size:14.5px;color:var(--navy);font-weight:900;margin-top:3px}
+.cover .band{background:var(--navy-deep);color:#fff;border-radius:10px;padding:13px;font-size:13.5px;font-weight:700;margin-bottom:26px}
+.cover .band b{color:#fbbf24}
+.cover .who{display:flex;justify-content:center;flex-wrap:wrap;gap:0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-top:4px}
+.cover .who span{flex:1;min-width:110px;padding:11px 8px;font-size:12.5px;color:#475569;border-right:1px solid #e2e8f0}
+.cover .who span:last-child{border-right:none}
+.cover .who b{display:block;color:#0f172a;font-size:13.5px;margin-top:2px}
+
+/* 부록: 전체 문항 응답표 */
+.appx-cols{display:flex;gap:14px}
+.appx-cols>table{width:100%}
+table.appx{border-collapse:collapse;width:100%;font-size:10.6px}
+.appx th,.appx td{border:1px solid #dbe2ea;padding:3.5px 5px;text-align:center}
+.appx th{background:#eef1f6;font-weight:800;color:#334155;font-size:9.8px;position:sticky;top:0}
+.appx tbody tr:nth-child(even) td{background:#f8fafc}
+.appx td.l{text-align:left}
+.appx .ok{color:#15803d;font-weight:800}
+.appx .no{color:#b91c1c;font-weight:800}
+.appx .catchip{display:inline-block;min-width:16px;padding:1px 5px;border-radius:4px;color:#fff;font-weight:800;font-size:9.6px}
+
+/* ---------- Printable blank 분석표 (Tab A) ---------- */
+#sheetView .paper{background:#fff;color:#334155;max-width:900px;margin:0 auto;border:1px solid #cbd5e1;border-radius:10px;box-shadow:var(--shadow);padding:22px 24px}
+.paper *{color-scheme:light}
+.ph-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--navy);padding-bottom:8px;margin-bottom:12px}
+.ph-top h2{font-size:19px;font-weight:900;color:var(--navy)}
+.ph-top .redp{font-size:11px;color:var(--red);font-weight:700;margin-top:3px}
+.ph-info{font-size:11px;color:#475569;text-align:right;line-height:1.9}
+.ph-info span{border-bottom:1px solid #94a3b8;display:inline-block;min-width:60px;margin-left:4px}
+table.blank{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11px}
+.blank th,.blank td{border:1px solid var(--paper-line);text-align:center;padding:5px 2px}
+.blank th{background:#f1f5f9;font-weight:800;font-size:10.5px}
+.blank .bn{background:#f1f5f9;font-weight:800;width:8%}
+.two-col{display:flex;gap:10px}
+.two-col>table{width:100%}
+.legend{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:7px 10px;margin-top:12px;font-size:9.5px;line-height:1.5;color:#475569;display:flex;flex-direction:column;gap:3px}
+.legend .lb{display:inline-block;color:#fff;border-radius:3px;font-weight:800;padding:1px 5px;font-size:8.5px;min-width:16px;text-align:center;margin-right:5px}
+.sig-cards{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;margin-top:10px}
+.sig-card{border:1.5px solid var(--navy);border-radius:8px;padding:9px 11px}
+.sig-card>.h{font-size:11.5px;font-weight:900;color:var(--navy);border-bottom:1px solid var(--navy);padding-bottom:3px;margin-bottom:6px}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.sig-grp h5{font-size:10px;font-weight:900;color:var(--navy);border-bottom:1px dashed #94a3b8;padding-bottom:2px;margin-bottom:4px}
+.sig-grp ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.sig-grp li{font-size:9px;line-height:1.3;color:#334155;display:flex;gap:4px;align-items:flex-start}
+.sig-grp li::before{content:"☐";color:var(--navy);font-size:10px;flex:0 0 auto}
+.mist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.mist li{font-size:9.5px;color:#334155;display:flex;gap:4px;align-items:flex-start}
+.mist li::before{content:"☐";color:var(--red);flex:0 0 auto}
+.mist b{color:var(--navy)}
+.proc{margin-top:8px}
+.proc .pr{border-bottom:1px dashed #cbd5e1;padding:4px 0}
+.proc .pr label{font-size:10px;font-weight:800;color:#334155;display:block}
+.proc .pr .ln{border-bottom:1px solid #cbd5e1;height:14px}
+.pfoot{text-align:right;font-size:10px;color:var(--navy);font-weight:800;margin-top:10px}
+
+/* ---------- Login ---------- */
+.login-screen{position:fixed;inset:0;z-index:200;background:linear-gradient(135deg,var(--navy-deep),#0b1220);display:grid;place-items:center;padding:20px}
+.login-card{background:var(--panel);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.4);width:100%;max-width:420px;padding:30px 28px;border:1px solid var(--line)}
+.login-card .lg-brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.login-card .lg-brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--navy),var(--blue));display:grid;place-items:center;font-size:21px}
+.login-card .lg-brand b{font-size:18px;font-weight:900;color:var(--navy)}
+.login-card .lg-brand small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.login-card p.sub{color:var(--muted);font-size:12.5px;margin:2px 0 18px}
+.role-toggle{display:flex;gap:8px;background:var(--soft-2);padding:5px;border-radius:12px;margin-bottom:18px}
+.role-toggle button{flex:1;border:none;background:transparent;color:var(--muted);font-weight:800;font-size:14px;padding:10px;border-radius:9px;cursor:pointer}
+.role-toggle button.active{background:var(--navy);color:#fff}
+.login-form{display:flex;flex-direction:column;gap:12px}
+.login-form label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:3px;display:block}
+.login-form input,.login-form select{width:100%;border:1px solid var(--line-2);background:var(--soft);color:var(--ink);border-radius:10px;padding:11px 12px;outline:none;font-size:14px}
+.login-form input:focus,.login-form select:focus{border-color:var(--navy);box-shadow:0 0 0 3px #1e3a8a1f}
+.login-form .go{background:var(--navy);color:#fff;font-weight:800;font-size:15px;padding:12px;border:none;border-radius:10px;cursor:pointer;margin-top:4px}
+.login-form .go:hover{background:var(--navy-deep)}
+.login-err{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}
+.login-foot{text-align:center;color:var(--muted);font-size:11px;margin-top:16px}
+
+/* ---------- Role visibility ---------- */
+body[data-role="student"] .admin-only{display:none!important}
+body[data-role="admin"] .student-only{display:none!important}
+
+/* ---------- Dashboard ---------- */
+.dash-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.dash-stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow)}
+.dash-stat b{font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
+.dash-stat span{display:block;font-size:11px;color:var(--muted);font-weight:700}
+.rec-table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.rec-table th{background:var(--soft-2);color:var(--slate-d);font-size:12px;font-weight:800;padding:11px 10px;text-align:left;border-bottom:1px solid var(--line-2)}
+.rec-table td{padding:10px;border-bottom:1px solid var(--line);font-size:13px}
+.rec-table tr:hover td{background:var(--soft)}
+.rec-table .num{font-variant-numeric:tabular-nums;font-weight:700;color:var(--navy)}
+.mini-btn{border:1px solid var(--line-2);background:var(--panel);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;margin-right:4px}
+.mini-btn:hover{border-color:var(--navy);color:var(--navy)}
+.mini-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.mini-btn.solid{background:var(--navy);color:#fff;border-color:var(--navy)}
+.subject-chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#fff}
+.done-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:30px;text-align:center;max-width:560px;margin:20px auto}
+.done-box .ic{font-size:44px}
+.done-box h2{color:var(--navy);font-size:20px;margin:8px 0 4px}
+.done-box p{color:var(--muted);font-size:13px;line-height:1.6}
+.done-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+
+/* ---------- Print ---------- */
+@media print{
+  #login{display:none!important}
+  .appbar,.toolbar,.no-print,.empty{display:none!important}
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  .card{display:none}
+  #sheetView .paper,.sheet{box-shadow:none;border:none;margin:0 auto;max-width:none;border-radius:0}
+  /* 여백 최소화: 화면용 패딩보다 좁게, 섹션 간 간격도 압축해 밀도를 높임 */
+  .sheet{page-break-after:always;padding:10mm 11mm 8mm;min-height:277mm}
+  .sheet:last-child{page-break-after:auto}
+  #sheetView .paper{padding:8mm 10mm}
+  .rhead{margin-bottom:14px}
+  .sec-title{margin:15px 0 8px}
+  .grid2,.grid3{gap:10px}
+  .cover{padding:14mm 30px 0}
+  .cover .pillars{margin:16px 0 20px}
+  .cover .band{margin-bottom:18px}
+  /* 표·카드·리스트 항목이 페이지 경계에서 잘리지 않도록 보호 */
+  .panel-lite,.coach .citem,.summ-list li,.sig-card,tr{break-inside:avoid}
+  table.appx tr{break-inside:avoid}
+  table.appx thead{display:table-header-group}
+  @page{size:A4 portrait;margin:9mm}
+}
+@media (max-width:640px){
+  .cover h1{font-size:26px}.sheet{padding:22px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .sig-cards{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<!-- ============ LOGIN ============ -->
+<div id="login" class="login-screen">
+  <div class="login-card">
+    <div class="lg-brand"><div class="logo">🧠</div><div><b>이든 수능 메타인지 분석</b><small>이든X학원 · 메타인지 학습 처방 시스템</small></div></div>
+    <p class="sub">로그인 대상을 선택하고 정보를 입력하세요.</p>
+    <div class="role-toggle">
+      <button id="rtStudent" class="active" onclick="setLoginRole('student')">🎓 학생</button>
+      <button id="rtAdmin" onclick="setLoginRole('admin')">🛠️ 관리자</button>
+    </div>
+    <div class="login-form">
+      <div id="studentLogin">
+        <label>이름</label>
+        <input id="lgName" type="text" placeholder="본인 이름을 입력하세요" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('lgPin').focus();}">
+        <label style="margin-top:10px">비밀번호 (6자리)</label>
+        <input id="lgPin" type="password" inputmode="numeric" maxlength="6" placeholder="등록된 비밀번호를 입력하세요" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="adminLogin" style="display:none">
+        <label>관리자 아이디</label>
+        <input id="lgAdmin" type="text" placeholder="관리자 ID" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-err" id="lgErr"></div>
+      <button class="go" onclick="doLogin()">로그인 →</button>
+    </div>
+    <div class="login-foot">© 이든X학원 · 황붕주 원장 메타인지 학습법</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" style="display:none">
+<div class="appbar">
+  <div class="brand">
+    <div class="logo">🧠</div>
+    <div><b>이든 수능 메타인지 분석</b><small id="roleTag">이든X학원</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="tabs" id="navTabs"></div>
+  <button class="icon-btn" title="라이트/다크 전환" onclick="toggleTheme()">🌓</button>
+  <button class="icon-btn admin-tools" title="로그아웃" onclick="logout()" style="margin-left:6px">⎋</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ INPUT (student input / admin manual) ============ -->
+  <div id="inputView" class="view active">
+    <div class="toolbar no-print">
+      <div class="subject-pills" id="subjectPills"></div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn btn-ghost admin-only" onclick="loadSample()">샘플 채우기</button>
+      <button class="btn btn-ghost" onclick="clearForm()">초기화</button>
+      <button class="btn btn-primary student-only" onclick="submitRecord()">제출하기 ✓</button>
+      <button class="btn btn-primary admin-only" onclick="generate()">보고서 생성 ▶</button>
+    </div>
+
+    <div class="card no-print" id="headerCard">
+      <h3><span class="badge-n">1</span> 응시 정보</h3>
+      <div class="field-grid" id="headerFields"></div>
+    </div>
+
+    <div class="card no-print" id="qCard">
+      <h3><span class="badge-n">2</span> 문항별 5단계 분석 입력 <span class="hint" style="margin-left:8px;font-weight:600">확·찍 = 정답 / 시·실·모 = 오답 (자동 채점)</span></h3>
+      <div class="hint" style="margin-bottom:10px">각 문항의 배점을 확인하고 <b>확·찍·시·실·모</b> 중 하나를 선택하세요. 오답(시·실·모)·찍은 문항은 <b>원인</b>을 지정하면 심층분석과 코칭에 반영됩니다.</div>
+      <div class="qlegend" id="qLegend"></div>
+      <div class="qtable-wrap">
+        <table class="qgrid"><thead id="qHead"></thead><tbody id="qBody"></tbody></table>
+      </div>
+      <div class="tally" id="tally"></div>
+    </div>
+
+    <div class="card no-print" id="processCard">
+      <h3><span class="badge-n">3</span> 시험 과정 자기평가 &amp; 목표 위치</h3>
+      <div class="field-grid" id="processFields"></div>
+    </div>
+
+    <div class="student-only" id="studentDone"></div>
+  </div>
+
+  <datalist id="danwonList"></datalist>
+
+  <!-- ============ ADMIN DASHBOARD ============ -->
+  <div id="dashView" class="view admin-only">
+    <div class="dash-bar">
+      <div class="dash-stat"><b id="stRecords">0</b><span>제출 기록</span></div>
+      <div class="dash-stat"><b id="stStudents">0</b><span>제출 학생</span></div>
+      <div style="font-size:12px;font-weight:800;margin-left:4px" id="cloudStatus"></div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn btn-primary" onclick="renderDash()">🔄 새로고침</button>
+      <button class="btn btn-ghost" onclick="cloudSettings()">☁ 클라우드 설정</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📥 파일 불러오기</button>
+      <input type="file" id="importFile" accept=".json,.eden" style="display:none" onchange="importFromFile(event)">
+      <button class="btn btn-ghost" onclick="importFromCode()">🔑 코드</button>
+      <button class="btn btn-ghost" onclick="clearAllRecords()">전체 삭제</button>
+    </div>
+    <div id="dashList"></div>
+  </div>
+
+  <!-- ============ REPORT OUTPUT (admin) ============ -->
+  <div id="reportView" class="view">
+    <div class="toolbar no-print" id="exportBar" style="display:none">
+      <button class="btn btn-ghost" onclick="switchView('dashView')">← 목록으로</button>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn btn-amber" onclick="window.print()">🖨️ PDF 인쇄/저장</button>
+      <button class="btn btn-primary" onclick="exportReportHTML()">🌐 HTML5로 저장</button>
+      <button class="btn btn-ghost" onclick="shareReport()">🔗 공유</button>
+    </div>
+    <div id="reportOut">
+      <div class="empty no-print"><div class="big">📊</div><b>선택된 보고서가 없습니다.</b><div class="hint" style="margin-top:6px">‘학생 기록’에서 학생을 선택해 보고서를 생성하세요.</div></div>
+    </div>
+  </div>
+
+  <!-- ============ BLANK 분석표 ============ -->
+  <div id="sheetView" class="view admin-only">
+    <div class="toolbar no-print">
+      <div class="subject-pills" id="sheetPills"></div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn btn-amber" onclick="window.print()">🖨️ A4 인쇄</button>
+    </div>
+    <div id="sheetOut"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ================= SUBJECT CONFIG ================= */
+const HWAK='확',JJIK='찍',SI='시',SIL='실',MO='모';
+const 확=HWAK,찍=JJIK,시=SI,실=SIL,모=MO; // Korean-char aliases used as object keys below
+const CATS=[HWAK,JJIK,SI,SIL,MO];
+const CATLABEL={확:'확',찍:'찍',시:'시',실:'실',모:'모'};
+
+const LEGEND=[
+ ['확','맞은 문제 중 확실히 아는 문제 (개념·풀이·선지를 말로 설명 가능)','var(--blue)'],
+ ['찍','찍어서 맞춘 문제(설명 불가) / 난이도 있어 찍었으나 시간이 부족했던 문제','var(--slate)'],
+ ['시','시간 더 주면 풀 수 있는 문제 / 난이도로 못 푼 문제 (반드시 다시 풀 것)','var(--amber)'],
+ ['실','단순 실수로 틀린 문제 (개념·풀이는 설명 가능)','var(--red)'],
+ ['모','아예 모르는 문제 (개념·풀이 시작점조차 설명 불가)','var(--slate-d)'],
+];
+
+// 심층분석2 (실 원인) 공통/과목별
+const MIST_COMMON=['문제 읽기(발문 오독)','정보 처리(판단 오류)','마킹 실수','기타'];
+const MIST_MATH=['발문 오독(구하는 값 혼동)','계산 실수(부호·연산)','조건/범위 누락','마킹 실수','기타'];
+const MIST_TAMGU=['발문 오독','자료 오독','마킹 실수','기타'];
+const MIST_HIST=['발문 오독','시대 혼동','마킹 실수','기타'];
+
+const PROC_Q=['① 시험 시작 전 나의 루틴은?','② 시험 중 집중력은 어땠는가?','③ 시험 시간이 부족했는가? (원인)','④ 추후 보완 전략은?'];
+
+const SUBJECTS={
+ korean:{name:'국어',color:'#e11d48',totalQ:45,maxScore:100,eval:'percentile',points:[2,3],defP:2,
+  areas:[['독서',1,17],['문학',18,34],['선택(화법과작문/언어와매체)',35,45]],
+  sig:{
+   '독서':['전문 용어/한자어 등 기본 어휘력·어법 부족','복잡한 장문 구조 분석 및 문장 단위 의미 파악 불가','문단 간 논리적 전개·거시적 흐름 연결 안 됨','정보량 과다 시 세부 정보·지문↔선지 매칭 실패','〈보기〉 사례에 지문 원리 적용·심화 추론 실패'],
+   '문학':['갈래별 필수 개념어·수사법/표현상 특징 파악 실패','화자·인물의 상황/정서/태도·갈등 양상 파악 실패','시공간 배경의 의미·서술상 특징(시점 등) 파악 실패','작품 세부 내용·지문↔선지 사실관계 매칭 실패','〈보기〉 외적 준거를 활용한 종합적 감상 실패'],
+   '언어와 매체':['음운·단어·문장 등 필수 문법 개념 암기 부족','개념의 실제 예문 적용·기출 유형 훈련 부족','지문형 문법 복합 지문 독해·문맥 추론 실패','매체별 소통 방식의 특징·표현 효과 파악 실패'],
+   '화법과 작문':['담화 상황·참여자의 말하기 방식 파악 실패','자료(통계·인터뷰 등)의 적절성·활용 파악 실패','조건에 맞는 글쓰기 전략(초고·고쳐쓰기) 적용 실패','청자/독자 반응 추론·관점의 비판적 이해 부족'],
+  },
+  mist:MIST_COMMON,
+ },
+ math:{name:'수학',color:'#2563eb',totalQ:30,maxScore:100,eval:'percentile',points:[2,3,4],defP:3,
+  areas:[['수학Ⅰ',1,11],['수학Ⅱ',12,22],['선택(미적분/기하/확통)',23,30]],
+  sig:{
+   '① 개념·공식':['필수 개념/정의·기본 공식 암기 부족','단원/공식의 적용 조건(전제) 미숙지','특정 단원 개념 자체가 떠오르지 않음','개념은 아나 문제에 어떻게 쓸지 모름'],
+   '② 조건해석·모델링':['텍스트를 수식으로 변환/번역 실패','그래프·도형의 성질/숨은 조건 파악 불가','기본 조건(정수·양수 등) 확인 누락','케이스 분류 기준 설정 실패'],
+   '③ 풀이설계·발상':['문제 접근 아이디어 자체를 못 떠올림','복합 문항의 단원 간 연결고리 파악 불가','풀이 중간에 막혀 다음 단계로 못 감','킬러 문항의 규칙성 발견·추론 실패'],
+   '④ 계산·시간관리':['계산이 길고 복잡해져 중도 포기','효율적 풀이법 못 찾아 과도한 시간 소요','선택과목(23~30번) 시간 부족으로 접근 불가','낯선 번호대(13·14·21 등) 심리적 압박'],
+  },
+  mist:MIST_MATH,
+ },
+ english:{name:'영어',color:'#f59e0b',totalQ:45,maxScore:100,eval:'grade',points:[2,3],defP:2,
+  gradeBands:[[90,1],[80,2],[70,3],[60,4],[50,5],[40,6],[30,7],[20,8],[0,9]],
+  areas:[['듣기',1,17],['독해',18,45]],
+  sig:{
+   '듣기 (1~17)':['단어부터 문장 자체가 잘 안 들림','문장은 대략 들리나 특정 단어를 못 들어 틀림','전체적으로 내용 이해가 안 됨','세부 정보/추론(목적·심경 등) 파악 실패'],
+   '독해 (18~45)':['기본 단어량 부족','문장(구문) 해석이 안 됨','문장 해석은 되나 전반적 독해가 어려움','고난도 유형(빈칸·순서·삽입) 접근이 힘듦','함축·추론·논리 흐름 파악 실패'],
+  },
+  mist:MIST_COMMON,
+ },
+ tamgu:{name:'탐구',color:'#0891b2',totalQ:20,maxScore:50,eval:'percentile',points:[2,3],defP:2,
+  areas:[['공통',1,20]],areaFree:true,
+  sig:{
+   '① 개념·용어':['핵심 개념·용어의 정의 암기 부족','개념 간 인과·비교 관계 정리 안 됨','특정 단원 개념 자체가 떠오르지 않음'],
+   '② 자료·도표 해석':['그래프·표·지도 등 자료 해석 실패','실험 과정·결과 자료 분석 실패','낯선 자료(〈보기〉)에 개념 적용·추론 실패'],
+   '③ 유형·발상':['빈출 유형의 풀이 순서·접근법 미숙','함정 선지·매력적 오답 구분 실패','복합·신유형 문항의 연결고리 파악 불가'],
+   '④ 시간·실수':['뒷번호 고난도(19·20번 등) 시간 부족','선지 비교에 과도한 시간 소요','자료 계산 과정에서의 실수'],
+  },
+  mist:MIST_TAMGU,
+ },
+ history:{name:'한국사',color:'#7c3aed',totalQ:20,maxScore:50,eval:'grade',points:[2,3],defP:2,
+  gradeBands:[[40,1],[35,2],[30,3],[25,4],[20,5],[15,6],[10,7],[5,8],[0,9]],
+  areas:[['전근대',1,10],['근현대',11,20]],areaFree:true,
+  sig:{
+   '① 시대별 개념·흐름':['특정 시대(고대·고려·조선·근현대) 핵심 개념 부족','사건의 전후 인과·시대 순서 혼동','주요 인물·제도·정책의 내용 미숙지'],
+   '② 사료·자료 해석':['사료의 핵심 키워드로 시대·주제 특정 실패','지도·연표·도표 등 자료 해석 실패','〈보기〉 자료에 개념 적용·추론 실패'],
+   '③ 빈출 유형 반복':['빈출 주제(정치·경제·사회·문화) 유형 훈련 부족','함정 선지·유사 시대 구분 실패','근현대사 순서 배열 유형 미숙'],
+  },
+  mist:MIST_HIST,
+ },
+};
+
+/* ============ 탐구 17과목 + 단원 (드롭다운/추천) ============ */
+const TAMGU_SUBJECTS=['생활과 윤리','윤리와 사상','한국지리','세계지리','동아시아사','세계사','경제','정치와 법','사회·문화','물리학Ⅰ','화학Ⅰ','생명과학Ⅰ','지구과학Ⅰ','물리학Ⅱ','화학Ⅱ','생명과학Ⅱ','지구과학Ⅱ'];
+const GRADE_OPTIONS=['고1','고2','고3','N수'];
+const CHOICE_OPTIONS={korean:['화법과 작문','언어와 매체'],math:['미적분','기하','확률과 통계']};
+const DANWON={
+ '생활과 윤리':['현대의 삶과 실천윤리','생명과 윤리','사회와 윤리','과학과 윤리','문화와 윤리','평화와 공존의 윤리'],
+ '윤리와 사상':['인간의 본성과 윤리','동양과 한국 윤리사상','서양 윤리사상','사회사상'],
+ '한국지리':['국토 인식과 지리정보','지형 환경','기후 환경','거주 공간의 변화','생산과 소비의 공간','인구·지역 개발'],
+ '세계지리':['세계화와 지역 이해','세계의 기후·지형','세계의 인문환경','몬순·건조·열대 지역','유럽·북아메리카','공존과 갈등'],
+ '동아시아사':['동아시아 역사의 시작','인구 이동과 문화 교류','국제 질서의 변화','근대 국가 수립','오늘날의 동아시아'],
+ '세계사':['문명의 발생','동아시아 세계','서아시아·인도','유럽·아메리카','제국주의와 세계대전','현대 세계'],
+ '경제':['경제생활과 합리적 선택','시장과 경제활동','국가와 경제활동','세계시장과 교역','경제생활과 금융'],
+ '정치와 법':['민주주의와 헌법','민주 국가와 정부','정치과정과 참여','개인 생활과 법','사회 생활과 법','국제 관계'],
+ '사회·문화':['사회·문화 현상의 탐구','개인과 사회구조','문화와 일상생활','사회 계층과 불평등','현대 사회와 사회 변동'],
+ '물리학Ⅰ':['역학과 에너지','물질과 전자기장','파동과 정보통신'],
+ '화학Ⅰ':['화학의 첫걸음','원자의 세계','화학 결합과 분자','역동적인 화학 반응'],
+ '생명과학Ⅰ':['생명과학의 이해','사람의 물질대사','항상성과 몸의 조절','유전','생태계와 상호작용'],
+ '지구과학Ⅰ':['고체 지구','대기와 해양','우주'],
+ '물리학Ⅱ':['역학적 상호작용','전자기장','파동과 물질의 성질'],
+ '화학Ⅱ':['물질의 상태와 용액','반응엔탈피와 화학 평형','반응 속도와 촉매','전기화학과 이용'],
+ '생명과학Ⅱ':['생명과학의 역사','세포의 특성','세포호흡과 광합성','유전자의 발현과 조절','생물의 진화와 다양성','생명공학 기술'],
+ '지구과학Ⅱ':['고체 지구','대기와 해양','우주'],
+};
+const HISTORY_DANWON=['선사·고조선','삼국·남북국','고려','조선 전기','조선 후기','개항기','일제강점기','현대(대한민국)'];
+
+/* ============ 등급컷 → 백분위 환산 (표준 경계 백분위 앵커) ============ */
+// 각 등급 최저 원점수(등급컷)에 대응하는 표준 누적 백분위: 1등급컷=상위4%→96 …
+const BOUND_PCT=[96,89,77,60,40,23,11,4]; // 1~8등급 컷
+const GRADECUT_PRESETS={
+ korean:{
+  '2026 수능 국어·화법과작문(예시)':[88,81,71,62,52,42,32,22],
+  '2026 수능 국어·언어와매체(예시)':[85,78,70,61,51,41,31,21],
+ },
+ math:{
+  '2026 수능 수학·미적분(예시)':[87,78,69,60,50,40,30,20],
+  '2026 수능 수학·확률과통계(예시)':[91,82,73,63,53,43,33,23],
+ },
+ tamgu:{}, // 과목·시행마다 달라 직접 입력
+};
+
+/* ============ COACHING KNOWLEDGE BASE (황붕주 원장 관점) ============ */
+const COACH={
+ korean:{
+  '독서':'독서는 <b>지문 근거 찾기</b>가 핵심입니다. 틀린 지문은 해설을 펴 두고, 근거 문장을 스스로 찾아 밑줄 치는 훈련을 반복하세요. 어휘가 약하면 지문의 한자어·전문 용어를 노트에 정리하고, 문단마다 한 줄 요약을 다는 <b>거시독해</b> 습관을 들이세요. 정보량이 많은 지문은 선지와 지문을 1:1로 대응시키는 연습이 효과적입니다.',
+  '문학':'문학은 개념어와 작품의 <b>흐름 파악</b>이 중요합니다. 인강·수업으로 갈래별 개념어(수사법·시점 등)를 숙지하고, 고전은 현대어 해석을 정리해 두세요. 최대한 객관적으로 화자·인물의 정서와 태도, 표현상 특징을 〈보기〉 근거로 확인하는 습관을 기르세요.',
+  '언어와 매체':'언매는 <b>문법 개념의 암기와 적용</b>이 승부처입니다. 음운·단어·문장 개념을 예문과 함께 정리하고, 기출 유형을 반복 훈련하세요. 지문형 문법은 문맥 속에서 규칙을 적용하는 연습이 필요합니다.',
+  '화법과 작문':'화작은 시간 확보용 <b>안정 득점원</b>이 되어야 합니다. 담화 상황·자료 활용·글쓰기 조건을 정확히 대응시키는 연습으로 실수 없이 빠르게 푸는 훈련을 하세요.',
+ },
+ math:{
+  '① 개념·공식':'개념 부족은 인강·수업으로 <b>해당 단원 개념을 먼저</b> 공부하세요. 개념 공부는 본인이 <b>말로 설명할 정도</b>로, 개념노트를 작성하며 하는 것이 좋습니다. 공식의 적용 조건(전제)까지 함께 정리해야 실전에서 씁니다.',
+  '② 조건해석·모델링':'문제의 언어를 수식·그래프로 <b>번역하는 훈련</b>이 필요합니다. 조건을 놓치는 경우가 많다면, 문제를 읽으며 조건에 밑줄·기호로 표시하고 그래프/도형의 숨은 성질을 먼저 적는 습관을 들이세요.',
+  '③ 풀이설계·발상':'유형 학습이 되어 있어도 유형이 연상되지 않으면 요구 유형이 떠오르지 않습니다. 개념 후에는 <b>유형서로 반복</b>하여 접근법이 머릿속에서 자동으로 떠오르도록 연습하세요. 킬러 문항은 규칙성·연결고리를 찾는 과정을 손으로 정리하며 훈련합니다.',
+  '④ 계산·시간관리':'계산에서 자주 막히면 연산이 충분히 몸에 배지 않은 것입니다. <b>계산 실수 노트</b>를 만들고, 안 풀리면 3분 내 넘기는 <b>시간 배분 연습</b>을 실전처럼 하세요. 선택과목 시간 부족은 뒷번호 훈련량으로 해결합니다.',
+ },
+ english:{
+  '듣기 (1~17)':'듣기는 <b>매일 꾸준한 청취</b>가 답입니다. 안 들리는 문장은 스크립트로 확인 후 섀도잉하고, 특정 단어를 놓친다면 어휘·연음에 집중하세요. 듣기는 안정적인 득점원이 되어야 독해 시간을 법니다.',
+  '독해 (18~45)':'영어의 기본은 <b>단어와 구문</b>입니다. 본인 수준의 영단어장을 매일 암기하고 주말 누적복습 하세요. 구문 해석이 막히면 문법·구문 강의로 짧은 구문부터 훈련하고, 빈칸·순서·삽입 같은 고난도 유형은 논리 흐름(연결어·지시어)을 근거로 푸는 연습을 반복하세요.',
+ },
+ tamgu:{
+  '① 개념·용어':'탐구는 <b>개념의 정확한 정의</b>에서 출발합니다. 용어를 말로 설명할 수 있을 때까지 정리하고, 개념 간 인과·비교 관계를 표로 묶어 두세요.',
+  '② 자료·도표 해석':'탐구의 당락은 <b>자료 해석</b>에서 갈립니다. 그래프·표·지도·실험 자료를 개념과 연결해 읽는 훈련을 기출로 반복하고, 낯선 〈보기〉 자료에 개념을 적용하는 연습을 하세요.',
+  '③ 유형·발상':'빈출 유형의 <b>풀이 순서를 체화</b>하고, 함정 선지·매력적 오답의 패턴을 오답노트로 정리하세요. 복합·신유형은 여러 개념의 연결을 손으로 정리하며 훈련합니다.',
+  '④ 시간·실수':'뒷번호 고난도에서 시간이 부족하면 <b>시간 재면서</b> 20분 안에 푸는 연습을 하세요. 자료 계산 실수는 실수노트로 관리합니다.',
+ },
+ history:{
+  '① 시대별 개념·흐름':'한국사는 <b>시대별 흐름</b>을 큰 줄기로 잡는 것이 먼저입니다. 연표를 만들어 사건의 전후 인과와 순서를 정리하고, 주요 인물·제도·정책을 시대별로 묶어 암기하세요.',
+  '② 사료·자료 해석':'사료의 <b>핵심 키워드로 시대·주제를 특정</b>하는 훈련이 핵심입니다. 기출 사료를 모아 키워드-시대 연결을 반복하고, 지도·연표 자료 해석을 연습하세요.',
+  '③ 빈출 유형 반복':'한국사는 <b>빈출 주제가 반복</b>됩니다. 정치·경제·사회·문화 테마별로 기출을 정리하고, 근현대사 순서 배열·유사 시대 구분 유형을 집중 훈련하면 절대평가 1등급은 충분히 가능합니다.',
+ },
+};
+const COACH_MIST={
+ '문제 읽기(발문 오독)':'발문을 잘못 읽는 실수는 문제를 읽을 때 <b>정오(맞는 것/틀린 것)·구하는 대상</b>에 먼저 밑줄·동그라미를 치고 푸는 습관으로 대부분 사라집니다.',
+ '발문 오독(구하는 값 혼동)':'구하는 값을 혼동하는 실수는 문제에서 <b>최종적으로 구할 것</b>을 먼저 표시하고 푸는 습관으로 잡으세요.',
+ '발문 오독':'발문을 잘못 읽는 실수는 <b>정오·조건</b>에 먼저 표시하고 푸는 습관으로 줄일 수 있습니다.',
+ '정보 처리(판단 오류)':'정보 처리 실수는 선지 판단을 서두르다 발생합니다. 근거를 <b>지문/자료에서 확인</b>한 뒤 선지를 지우는 순서를 지키세요.',
+ '계산 실수(부호·연산)':'계산 실수(부호·연산)는 <b>실수노트</b>에 유형별로 모아 반복 점검하는 것이 가장 효과적입니다. 암산을 줄이고 과정을 또렷이 쓰세요.',
+ '조건/범위 누락':'조건·범위(부등호·정의역 등) 누락은 문제의 조건에 <b>기호로 표시</b>하고, 답을 낸 뒤 조건을 재확인하는 절차로 방지하세요.',
+ '자료 오독':'자료를 잘못 읽는 실수는 축·단위·범례를 먼저 확인하고 자료의 <b>핵심 수치</b>에 표시하는 습관으로 줄이세요.',
+ '시대 혼동':'시대 혼동 실수는 사료의 <b>키워드-시대 연결</b>을 반복 훈련하면 크게 줄어듭니다.',
+ '마킹 실수':'마킹 실수는 <b>5문항 단위</b>로 끊어 마킹하고, 종료 5분 전 답안지 대조로 예방하세요.',
+ '기타':'어떤 유형의 실수인지 선생님과 상담하여 원인을 특정하고 대책을 함께 세우시길 권장합니다.',
+};
+
+/* ================= STATE ================= */
+let curSubject='korean', curSheet='korean';
+const F={}; // header field values keyed
+
+/* ================= HELPERS ================= */
+const $=s=>document.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+function areaOf(cfg,n){for(const[a,s,e]of cfg.areas)if(n>=s&&n<=e)return a;return cfg.areas[0][0];}
+function round(x){return Math.round(x);}
+function pctEstimate(score,max){ // rough monotonic curve, editable by user
+  const r=score/max*100;
+  const A=[[100,99],[97,97],[93,93],[89,86],[85,80],[80,72],[75,64],[70,56],[65,48],[60,41],[55,34],[50,28],[40,17],[30,9],[20,4],[0,1]];
+  for(let i=0;i<A.length-1;i++){const[x1,y1]=A[i],[x2,y2]=A[i+1];if(r<=x1&&r>=x2){const t=(r-x2)/(x1-x2);return round(y2+t*(y1-y2));}}
+  return round(r);
+}
+function gradeOf(cfg,score){for(const[cut,g]of cfg.gradeBands)if(score>=cut)return g;return 9;}
+function pctFromCuts(score,cuts,max){ // 등급컷 원점수 앵커로 선형 보간
+  const anc=[{r:0,p:0},{r:max,p:100}];
+  cuts.forEach((v,i)=>{if(v!==''&&v!=null&&!isNaN(v))anc.push({r:+v,p:BOUND_PCT[i]});});
+  anc.sort((a,b)=>a.r-b.r||a.p-b.p);
+  for(let i=0;i<anc.length-1;i++){const a=anc[i],b=anc[i+1];if(score>=a.r&&score<=b.r){const t=(b.r-a.r)?(score-a.r)/(b.r-a.r):0;return round(a.p+t*(b.p-a.p));}}
+  return score>=max?100:0;
+}
+function hasCuts(cuts){return cuts&&cuts.some(v=>v!==''&&v!=null&&!isNaN(v));}
+
+/* ================= BUILD PILLS ================= */
+function buildPills(){
+  const mk=(host,active,cb)=>{host.innerHTML='';for(const k in SUBJECTS){const b=el('button','spill'+(k===active?' active':''),SUBJECTS[k].name);b.onclick=()=>cb(k);host.appendChild(b);}};
+  mk($('#subjectPills'),curSubject,k=>{curSubject=k;buildForm();$('#subjectPills').querySelectorAll('.spill').forEach((p,i)=>p.classList.toggle('active',Object.keys(SUBJECTS)[i]===k));});
+  mk($('#sheetPills'),curSheet,k=>{curSheet=k;buildBlankSheet();$('#sheetPills').querySelectorAll('.spill').forEach((p,i)=>p.classList.toggle('active',Object.keys(SUBJECTS)[i]===k));});
+}
+
+/* ================= HEADER + PROCESS FIELDS ================= */
+function buildHeaderFields(){
+  const cfg=SUBJECTS[curSubject];
+  const isTamgu=curSubject==='tamgu';
+  const choices=CHOICE_OPTIONS[curSubject];
+  const rows=[
+   ['name','이름','text','예: 홍길동'],
+   ['exam','시험명','text','예: 2026학년도 6월 모의평가'],
+   ['date','시험일','date',''],
+   ['grade','학년','grade',''],
+  ];
+  if(isTamgu)rows.push(['pick','탐구 과목','tamgu','']);
+  else if(choices)rows.push(['pick','선택과목','choice','']);
+  rows.push(['target','목표 대학/전공','text','예: 중앙대 기계공학부']);
+  let h='';
+  for(const[k,l,t,ph]of rows){
+    if(t==='tamgu'){
+      h+=`<div class="f"><label>${l}</label><select data-h="pick" onchange="onTamguSubject()"><option value="">— 과목 선택 —</option>`+
+         TAMGU_SUBJECTS.map(s=>`<option>${s}</option>`).join('')+`</select></div>`;
+    }else if(t==='choice'){
+      h+=`<div class="f"><label>${l}</label><select data-h="pick"><option value="">— 선택과목 선택 —</option>`+
+         choices.map(s=>`<option>${s}</option>`).join('')+`</select></div>`;
+    }else if(t==='grade'){
+      h+=`<div class="f"><label>${l}</label><select data-h="grade"><option value="">— 학년 선택 —</option>`+
+         GRADE_OPTIONS.map(s=>`<option>${s}</option>`).join('')+`</select></div>`;
+    }else{
+      h+=`<div class="f"><label>${l}</label><input data-h="${k}" type="${t}" placeholder="${ph}"></div>`;
+    }
+  }
+  $('#headerFields').innerHTML=h;
+}
+function populateDanwon(){
+  const dl=$('#danwonList');if(!dl)return;let list=[];
+  if(curSubject==='tamgu'){const pk=$('[data-h="pick"]');const sub=pk?pk.value:'';list=DANWON[sub]||[];}
+  else if(curSubject==='history'){list=HISTORY_DANWON;}
+  dl.innerHTML=list.map(x=>`<option value="${x}"></option>`).join('');
+}
+function onTamguSubject(){populateDanwon();}
+function buildProcessFields(){
+  const cfg=SUBJECTS[curSubject];
+  let h='';
+  PROC_Q.forEach((q,i)=>{h+=`<div class="f" style="grid-column:span 2"><label>${q}</label><input data-p="${i}" type="text"></div>`;});
+  if(cfg.eval==='percentile'){
+    h+=`<div class="f"><label>목표대학 백분위</label><input data-h="targetPct" type="number" min="0" max="100" placeholder="예: 83"></div>`;
+    // 등급컷 환산표 입력
+    const presets=GRADECUT_PRESETS[curSubject]||{};
+    const popt='<option value="">— 등급컷 프리셋 —</option>'+Object.keys(presets).map(k=>`<option>${k}</option>`).join('');
+    let cutInputs='';for(let g=1;g<=8;g++)cutInputs+=`<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted)">${g}<input data-cut="${g-1}" type="number" min="0" max="${cfg.maxScore}" style="width:42px;padding:5px 3px" oninput="refreshEstPct()"></span>`;
+    h+=`<div class="f" style="grid-column:1/-1"><label style="color:var(--navy)">백분위 환산용 등급컷 원점수 (1~8등급 · 선택 입력)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px">
+        <select id="cutPreset" onchange="applyCutPreset()" style="padding:6px 8px;border:1px solid var(--line-2);border-radius:8px;background:var(--soft);color:var(--ink)">${popt}</select>
+        ${cutInputs}
+      </div>
+      <div class="hint" style="margin-top:4px">등급컷을 넣으면 예상 백분위를 정확히 산출합니다(등급 경계=표준 백분위). 비우면 근사 추정값을 사용합니다.</div></div>`;
+    h+=`<div class="f"><label style="color:var(--navy)">예상 백분위 — 원점수</label><input data-pct="raw" type="number" min="0" max="100" placeholder="자동추정"></div>`;
+    h+=`<div class="f"><label style="color:var(--navy)">P점수 백분위</label><input data-pct="p" type="number" placeholder="자동추정"></div>`;
+    h+=`<div class="f"><label style="color:var(--navy)">메타A 백분위</label><input data-pct="a" type="number" placeholder="자동추정"></div>`;
+    h+=`<div class="f"><label style="color:var(--navy)">메타A+ 백분위</label><input data-pct="ap" type="number" placeholder="자동추정"></div>`;
+  }else{
+    h+=`<div class="f"><label>목표 등급</label><input data-h="targetGrade" type="number" min="1" max="9" placeholder="예: 1"></div>`;
+    h+=`<div class="f" style="grid-column:span 2"><div class="hint">${cfg.name}는 <b>절대평가</b>입니다. 등급은 원점수 기준으로 자동 산출됩니다.</div></div>`;
+  }
+  $('#processFields').innerHTML=h;
+}
+
+/* ================= QUESTION GRID ================= */
+function buildQGrid(){
+  const cfg=SUBJECTS[curSubject];
+  $('#qHead').innerHTML=`<tr>
+    <th>번호</th><th>배점</th><th>채점</th>
+    <th style="min-width:172px">5단계 (확·찍·시·실·모)</th>
+    <th>영역</th><th>단원·문제유형</th><th>원인(찍·모·실)</th></tr>`;
+  let h='';
+  for(let n=1;n<=cfg.totalQ;n++){
+    const area=areaOf(cfg,n);
+    let opts=cfg.points.map(p=>`<option value="${p}"${p===cfg.defP?' selected':''}>${p}</option>`).join('');
+    let areaSel;
+    if(cfg.areaFree){areaSel=`<input class="type-in area-free" data-n="${n}" placeholder="${area}" list="danwonList" style="width:100px">`;}
+    else{areaSel=`<select class="area-sel" data-n="${n}">`+cfg.areas.map(a=>`<option${a[0]===area?' selected':''}>${a[0]}</option>`).join('')+`</select>`;}
+    h+=`<tr data-row="${n}">
+      <td class="qn">${n}</td>
+      <td><select class="p-sel" data-n="${n}">${opts}</select></td>
+      <td class="chk-cell"><span class="chk" style="background:#cbd5e1">-</span></td>
+      <td>${segHTML(n)}</td>
+      <td>${areaSel}</td>
+      <td><input class="type-in" data-n="${n}" placeholder="예: 빈칸추론"></td>
+      <td class="cause-cell dim">${causeSel(cfg,n)}</td>
+    </tr>`;
+  }
+  $('#qBody').innerHTML=h;
+  // wire
+  $('#qBody').querySelectorAll('.seg input').forEach(r=>r.addEventListener('change',onCat));
+  $('#qBody').querySelectorAll('.p-sel').forEach(s=>s.addEventListener('change',updateTally));
+  updateTally();
+}
+function segHTML(n){
+  const map={확:'hwak',찍:'jjik',시:'si',실:'sil',모:'mo'};
+  let h=`<div class="seg" data-n="${n}">`;
+  for(const c of CATS)h+=`<label class="${map[c]}"><input type="radio" name="cat${n}" value="${c}">${c}</label>`;
+  return h+'</div>';
+}
+function causeSel(cfg,n){
+  let h=`<select class="cause-sel" data-n="${n}"><option value="">— 원인 —</option>`;
+  // signals (for 찍/모)
+  for(const g in cfg.sig){h+=`<optgroup label="찍·모 · ${g}">`;cfg.sig[g].forEach(s=>h+=`<option value="S::${g}::${s}">${s}</option>`);h+='</optgroup>';}
+  h+=`<optgroup label="실 · 실수 원인">`;cfg.mist.forEach(m=>h+=`<option value="M::${m}">${m}</option>`);h+='</optgroup>';
+  return h+'</select>';
+}
+function onCat(e){
+  const n=e.target.closest('.seg').dataset.n, cat=e.target.value;
+  const row=$(`#qBody tr[data-row="${n}"]`);
+  // labels highlight
+  row.querySelectorAll('.seg label').forEach(l=>l.classList.remove('on'));
+  e.target.closest('label').classList.add('on');
+  // 채점
+  const correct=(cat===HWAK||cat===JJIK);
+  const chk=row.querySelector('.chk');
+  chk.textContent=correct?'O':'X';chk.style.background=correct?'var(--ok)':'var(--red)';
+  // cause enable for 찍/모/실
+  const cc=row.querySelector('.cause-cell');
+  cc.classList.toggle('dim',!(cat===JJIK||cat===MO||cat===SIL));
+  updateTally();
+}
+function updateTally(){
+  const cfg=SUBJECTS[curSubject];const sums={},cnts={};CATS.forEach(c=>{sums[c]=0;cnts[c]=0;});
+  let ptTotal=0;
+  $('#qBody').querySelectorAll('tr').forEach(tr=>{
+    const n=tr.dataset.row,p=+tr.querySelector('.p-sel').value;ptTotal+=p;
+    const r=tr.querySelector(`input[name="cat${n}"]:checked`);
+    if(r){sums[r.value]+=p;cnts[r.value]++;}
+  });
+  const colors={확:'var(--blue)',찍:'var(--slate)',시:'var(--amber)',실:'var(--red)',모:'var(--slate-d)'};
+  let h='';CATS.forEach(c=>{h+=`<span class="tchip"><i style="background:${colors[c]}"></i>${c} ${cnts[c]}문항 · ${sums[c]}점</span>`;});
+  const raw=sums[확]+sums[찍];
+  h+=`<span class="tchip" style="border-color:var(--navy)"><b style="color:var(--navy)">원점수 ${raw}점</b></span>`;
+  const ok=ptTotal===cfg.maxScore;
+  h+=`<span class="tchip ${ok?'':'warn'}">배점 합계 ${ptTotal} / ${cfg.maxScore}점 ${ok?'✓':'⚠ 확인'}</span>`;
+  $('#tally').innerHTML=h;
+}
+
+const CATFULL={확:'확실히 앎 · 정답',찍:'찍어서 맞음 · 정답',시:'시간 부족 · 오답',실:'단순 실수 · 오답',모:'전혀 모름 · 오답'};
+function buildQLegend(){
+  const host=$('#qLegend');if(!host)return;
+  host.innerHTML=LEGEND.map(([b,t,col])=>`<div class="qlrow"><span class="b2" style="background:${col}">${b}</span><div><span class="tag">${CATFULL[b]}</span>${t}</div></div>`).join('');
+}
+function buildForm(){buildHeaderFields();buildQLegend();buildQGrid();buildProcessFields();populateDanwon();if(session&&session.role==='student')fillStudentIdentity();}
+function collectCuts(){const cuts=[];document.querySelectorAll('[data-cut]').forEach(i=>cuts[+i.dataset.cut]=i.value.trim());return cuts;}
+function applyCutPreset(){const sel=$('#cutPreset');const arr=(GRADECUT_PRESETS[curSubject]||{})[sel.value];if(!arr)return;document.querySelectorAll('[data-cut]').forEach((inp,i)=>inp.value=arr[i]??'');refreshEstPct();}
+function refreshEstPct(){
+  const cfg=SUBJECTS[curSubject];if(cfg.eval!=='percentile')return;
+  const cuts=collectCuts();const use=hasCuts(cuts);const c=compute(collect());
+  const est=s=>use?pctFromCuts(s,cuts,cfg.maxScore):pctEstimate(s,cfg.maxScore);
+  const map={raw:c.raw,p:c.P,a:c.A,ap:c.AP};
+  document.querySelectorAll('[data-pct]').forEach(i=>{i.placeholder='자동추정 ≈ '+est(map[i.dataset.pct]);});
+}
+
+/* ================= COLLECT + COMPUTE ================= */
+function collect(){
+  const cfg=SUBJECTS[curSubject];
+  const hd={};$('#headerFields').querySelectorAll('[data-h]').forEach(i=>hd[i.dataset.h]=i.value.trim());
+  $('#processFields').querySelectorAll('[data-h]').forEach(i=>hd[i.dataset.h]=i.value.trim());
+  const proc=[];$('#processFields').querySelectorAll('[data-p]').forEach(i=>proc[+i.dataset.p]=i.value.trim());
+  const pctIn={};$('#processFields').querySelectorAll('[data-pct]').forEach(i=>pctIn[i.dataset.pct]=i.value.trim());
+  const Q=[];
+  $('#qBody').querySelectorAll('tr').forEach(tr=>{
+    const n=+tr.dataset.row,p=+tr.querySelector('.p-sel').value;
+    const r=tr.querySelector(`input[name="cat${n}"]:checked`);
+    const areaEl=tr.querySelector('.area-sel,.area-free');
+    const area=areaEl?(areaEl.value||areaEl.placeholder):areaOf(cfg,n);
+    const type=tr.querySelector('.type-in[data-n="'+n+'"]').value.trim();
+    const cause=tr.querySelector('.cause-sel').value;
+    Q.push({n,p,cat:r?r.value:null,area,type,cause});
+  });
+  return {cfg,subject:curSubject,hd,proc,pctIn,Q,cuts:collectCuts()};
+}
+function compute(d){
+  const {cfg,Q}=d;const sums={},cnts={};CATS.forEach(c=>{sums[c]=0;cnts[c]=0;});
+  Q.forEach(q=>{if(q.cat){sums[q.cat]+=q.p;cnts[q.cat]++;}});
+  const raw=sums[확]+sums[찍];
+  const P=sums[확];
+  // 메타PRO 관례: 소수점 절사(floor) — 3개 공식 샘플로 검증(국 77/92, 수 74/90, 영 80/92)
+  const A=Math.floor(P+0.5*(sums[시]+sums[실]));
+  const AP=Math.floor(P+(sums[시]+sums[실])+0.5*(sums[찍]+sums[모]));
+  return {sums,cnts,raw,P,A,AP,answered:CATS.reduce((a,c)=>a+cnts[c],0)};
+}
+
+/* ================= SVG BAR CHART ================= */
+function barChart(labels,vals,colors,opts={}){
+  const w=opts.w||300,h=opts.h||150,pad=26,bw=(w-pad*2)/labels.length;
+  const max=Math.max(1,...vals,opts.max||0);
+  let bars='',axis='';
+  const y0=h-22,ytop=14;
+  vals.forEach((v,i)=>{
+    const bh=(v/max)*(y0-ytop);
+    const x=pad+i*bw+bw*0.2,bwid=bw*0.6,y=y0-bh;
+    bars+=`<rect x="${x}" y="${y}" width="${bwid}" height="${bh}" rx="2" fill="${colors[i]||'#2563eb'}"/>`;
+    bars+=`<text x="${x+bwid/2}" y="${y-4}" font-size="11" font-weight="700" text-anchor="middle" fill="#334155">${v}</text>`;
+    bars+=`<text x="${x+bwid/2}" y="${h-6}" font-size="10.5" text-anchor="middle" fill="#64748b">${labels[i]}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${w}px;display:block;margin:0 auto"><line x1="${pad}" y1="${y0}" x2="${w-pad+6}" y2="${y0}" stroke="#e2e8f0"/>${bars}</svg>`;
+}
+const CC={확:'#2563eb',찍:'#64748b',시:'#f59e0b',실:'#ef4444',모:'#334155'};
+
+/* ================= 부록: 전체 문항 응답표 ================= */
+function appendixTable(cfg,Q){
+  const correct=q=>q.cat===HWAK||q.cat===JJIK;
+  const rowHTML=q=>{
+    const okmark=q.cat?(correct(q)?'<span class="ok">O</span>':'<span class="no">X</span>'):'-';
+    const catmark=q.cat?`<span class="catchip" style="background:${CC[q.cat]}">${q.cat}</span>`:'-';
+    return `<tr><td>${q.n}</td><td class="l">${q.area||'-'}</td><td>${q.p}</td><td>${okmark}</td><td>${catmark}</td></tr>`;
+  };
+  const half=Math.ceil(Q.length/2);
+  const left=Q.slice(0,half),right=Q.slice(half);
+  const head='<thead><tr><th>번호</th><th>영역</th><th>배점</th><th>정답</th><th>판정</th></tr></thead>';
+  const t1=`<table class="appx">${head}<tbody>${left.map(rowHTML).join('')}</tbody></table>`;
+  const t2=right.length?`<table class="appx">${head}<tbody>${right.map(rowHTML).join('')}</tbody></table>`:'';
+  return `<div class="appx-cols">${t1}${t2}</div>`;
+}
+
+/* ================= GENERATE REPORT ================= */
+function generate(dArg){
+  const d=dArg||collect();const c=compute(d);
+  if(c.answered===0){alert('문항의 5단계(확·찍·시·실·모)를 하나 이상 선택해 주세요.');return;}
+  const {cfg,hd,proc,pctIn,Q,cuts}=d;const name=hd.name||'학생';const isPct=cfg.eval==='percentile';
+  // percentiles / grades
+  let posRaw,posP,posA,posAP,targetVal,gradeInfo=null;
+  if(isPct){
+    const useCuts=hasCuts(cuts);
+    const est=s=>useCuts?pctFromCuts(s,cuts,cfg.maxScore):pctEstimate(s,cfg.maxScore);
+    posRaw=pctIn.raw!==''?+pctIn.raw:est(c.raw);
+    posP  =pctIn.p!==''?+pctIn.p:est(c.P);
+    posA  =pctIn.a!==''?+pctIn.a:est(c.A);
+    posAP =pctIn.ap!==''?+pctIn.ap:est(c.AP);
+    targetVal=hd.targetPct!==''&&hd.targetPct!=null?+hd.targetPct:null;
+  }else{
+    gradeInfo={raw:gradeOf(cfg,c.raw),P:gradeOf(cfg,c.P),A:gradeOf(cfg,c.A),AP:gradeOf(cfg,c.AP)};
+    targetVal=hd.targetGrade?+hd.targetGrade:null;
+  }
+  // aggregations
+  const byArea={};cfg.areas.forEach(a=>byArea[a[0]]={});
+  Q.forEach(q=>{if(!q.cat)return;const a=q.area||areaOf(cfg,q.n);byArea[a]=byArea[a]||{};byArea[a][q.cat]=(byArea[a][q.cat]||0)+1;});
+  const byPts={};cfg.points.forEach(p=>byPts[p]={});
+  Q.forEach(q=>{if(!q.cat)return;byPts[q.p]=byPts[q.p]||{};byPts[q.p][q.cat]=(byPts[q.p][q.cat]||0)+1;});
+
+  const issuedAt=new Date().toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  let H='';
+  /* ---- COVER ---- */
+  H+=`<div class="sheet cover">
+    <div class="sheet-body">
+    <div class="cover-mark"><div class="logo">🧠</div><b>이든X학원</b></div>
+    <div class="kick">메타인지를 이용한 맞춤 공부 처방</div>
+    <h1>이든 수능 메타인지<br>분석 보고서</h1>
+    <div class="rule"></div>
+    <div class="pillars">
+      <div><div class="t">맞힌 문제도</div><div class="b">다시 본다</div></div>
+      <div><div class="t">자주 틀리는</div><div class="b">약점을 파악</div></div>
+      <div><div class="t">꼼꼼한</div><div class="b">분석 리포트</div></div>
+    </div>
+    <div class="band">수험생의 숨겨진 <b>리스크를 제거</b>하고, 숨겨진 <b>잠재력을 발굴</b>합니다.</div>
+    <div class="who">
+      <span>과목<b>${cfg.name}</b></span>
+      <span>시험일<b>${hd.date||'-'}</b></span>
+      <span>학년<b>${hd.grade||'-'}</b></span>
+      <span>이름<b>${name}</b></span>
+    </div>
+    </div>
+    <div class="rfootband"><span class="rf-brand">이든X학원 · <b>황붕주 원장</b> 메타인지 학습법</span><span class="rf-meta">${hd.exam||''} &nbsp;|&nbsp; 발급 ${issuedAt}</span></div>
+  </div>`;
+
+  /* ---- 해석기준 ---- */
+  H+=`<div class="sheet">
+   <div class="sheet-body">
+   ${rhead('보고서 보는 방법 · 해석 기준',cfg,hd,name)}
+   <div class="sec-note">메타인지 분석은 “점수”가 아니라 <b>아는 것과 모르는 것을 구분</b>하는 도구입니다. 세 가지 위치 점수로 현재 실력(P), 가까운 목표(메타A), 최대 잠재력(메타A+)을 봅니다.</div>
+   <table class="rtab"><tr><th style="width:120px">점수</th><th>정의</th></tr>
+    <tr><td class="hl">P 점수</td><td class="l"><b>확실히 아는 문항의 점수 합</b> (원점수에서 ‘찍’ 점수를 뺀 값). 개념·풀이를 말로 설명할 수 있는 진짜 실력.</td></tr>
+    <tr><td class="hl">메타A (스킬영역)</td><td class="l">P 점수 + <b>(시·실) 점수의 50%</b>. 시간·실수만 잡으면 도달 가능한 가까운 목표. 목표대학 백분위와 비슷하면 합격 가능성이 높습니다.</td></tr>
+    <tr><td class="hl">메타A+ (지식영역)</td><td class="l">P + (시·실) + <b>(찍·모) 점수의 50%</b>. 더 노력하면 도달 가능한 최대 잠재력. 학습 전략 수립의 근거가 됩니다.</td></tr>
+   </table>
+   <div class="grid2" style="margin-top:12px">
+    <div class="panel-lite"><h4>확·찍·시·실·모 선택 기준</h4>
+      <ul class="summ-list" style="gap:5px">${LEGEND.map(([b,t,col])=>`<li><span class="dot" style="background:${col}">${b}</span><span style="font-size:11.8px">${t}</span></li>`).join('')}</ul></div>
+    <div class="panel-lite"><h4>보고서 구성</h4>
+      <div style="font-size:12px;line-height:1.9;color:#475569">① 과목 대시보드 (5단계·목표대학·배점별·영역별)<br>② 메타인지 분석 요약<br>③ 문항별 심층분석 (찍·모·실)<br>④ 전문가 코칭 솔루션<br>⑤ 2026 입시 정보 &amp; 전략<br>⑥ 부록 · 전체 문항 응답표</div></div>
+   </div>
+   </div>
+   ${rfootband(hd,name,cfg,issuedAt)}
+  </div>`;
+
+  /* ---- DASHBOARD ---- */
+  const rowScore=`<tr><td>점수</td>${CATS.map(cx=>`<td class="hl">${c.sums[cx]}</td>`).join('')}<td class="hl">${c.raw}</td></tr>`;
+  let posTable;
+  if(isPct){
+    posTable=`<table class="rtab" style="margin-top:10px">
+     <tr><th>구분</th><th>원점수</th><th>P점수</th><th>메타A</th><th>메타A+</th><th>목표</th></tr>
+     <tr><td>점수</td><td class="hl">${c.raw}</td><td class="hl">${c.P}</td><td class="hl">${c.A}</td><td class="hl">${c.AP}</td><td>${hd.target||'-'}</td></tr>
+     <tr><td>예상 위치(백분위)</td><td>${posRaw}</td><td>${posP}</td><td class="hl">${posA}</td><td>${posAP}</td><td>${targetVal??'-'}</td></tr>
+    </table>`;
+  }else{
+    posTable=`<table class="rtab" style="margin-top:10px">
+     <tr><th>구분</th><th>원점수</th><th>P점수</th><th>메타A</th><th>메타A+</th><th>목표</th></tr>
+     <tr><td>점수</td><td class="hl">${c.raw}</td><td class="hl">${c.P}</td><td class="hl">${c.A}</td><td class="hl">${c.AP}</td><td>${hd.target||'-'}</td></tr>
+     <tr><td>예상 등급(절대)</td><td>${gradeInfo.raw}등급</td><td>${gradeInfo.P}등급</td><td class="hl">${gradeInfo.A}등급</td><td>${gradeInfo.AP}등급</td><td>${targetVal?targetVal+'등급':'-'}</td></tr>
+    </table>`;
+  }
+  // target chart
+  let tChart;
+  if(isPct){
+    const lbl=['P','메타A','메타A+','목표'],val=[posP,posA,posAP,targetVal??0],col=['#93c5fd','#60a5fa','#2563eb','#ef4444'];
+    tChart=barChart(lbl,val,col,{max:100,h:150});
+  }else{
+    const lbl=['원점수','P','메타A','메타A+'],val=[c.raw,c.P,c.A,c.AP],col=['#93c5fd','#60a5fa','#3b82f6','#2563eb'];
+    tChart=barChart(lbl,val,col,{max:cfg.maxScore,h:150});
+  }
+  // 배점별 charts
+  let ptCharts='';cfg.points.forEach(p=>{
+    const vals=CATS.map(cx=>byPts[p][cx]||0);const tot=vals.reduce((a,b)=>a+b,0);
+    ptCharts+=`<div class="panel-lite"><div class="chart-title">${p}점 / ${tot}문항</div>${barChart(CATS,vals,CATS.map(cx=>CC[cx]),{h:130})}</div>`;
+  });
+  // 영역별 charts
+  let arCharts='';cfg.areas.forEach(a=>{
+    const nm=a[0].replace(/\(.*\)/,'').trim();const vals=CATS.map(cx=>byArea[a[0]][cx]||0);const tot=vals.reduce((x,y)=>x+y,0);
+    if(tot===0)return;
+    arCharts+=`<div class="panel-lite"><div class="chart-title">${nm} / ${tot}문항</div>${barChart(CATS,vals,CATS.map(cx=>CC[cx]),{h:130})}</div>`;
+  });
+  // 시험과정 table
+  const procRows=PROC_Q.map((q,i)=>`<tr><td class="l" style="width:180px;background:#f8fafc;font-weight:700">${q}</td><td class="l">${proc[i]||'-'}</td></tr>`).join('');
+
+  H+=`<div class="sheet">
+   <div class="sheet-body">
+   ${rhead(monthTitle(hd)+' 메타인지 분석표',cfg,hd,name)}
+   <div class="sec-title"><span class="n">📊</span>확·찍·시·실·모 5단계 분석 및 위치</div>
+   <div class="grid2">
+     <div><table class="rtab"><tr><th>5단계</th>${CATS.map(cx=>`<th>${cx}</th>`).join('')}<th>총점</th></tr>${rowScore}</table>${posTable}</div>
+     <div class="panel-lite"><h4>${isPct?'목표 대학 위치 (백분위)':'점수 프로파일'}</h4>${tChart}</div>
+   </div>
+   <div class="sec-title" style="margin-top:18px"><span class="n">▤</span>배점별 분석</div>
+   <div class="grid${cfg.points.length>=3?'3':'2'}">${ptCharts}</div>
+   <div class="sec-title" style="margin-top:18px"><span class="n">◧</span>영역별 분석</div>
+   <div class="grid${arCharts.split('panel-lite').length-1>=3?'3':'2'}">${arCharts}</div>
+   <div class="sec-title" style="margin-top:18px"><span class="n">✎</span>${cfg.name} 시험과정 자기평가</div>
+   <table class="rtab">${procRows}</table>
+   </div>
+   ${rfootband(hd,name,cfg,issuedAt)}
+  </div>`;
+
+  /* ---- 메타인지 분석 요약 + 문항별 심층분석 ---- */
+  const tot=c.answered;
+  const summ=CATS.map(cx=>`<li><span class="dot" style="background:${CC[cx]}">${cx}</span><span>‘${cx}’ 문항 <b>${c.cnts[cx]}</b>개 · 전체의 <b>${round(c.cnts[cx]/tot*100)}%</b></span></li>`).join('');
+  // 문항별 심층분석: 찍/모/실
+  const deep=Q.filter(q=>q.cat===JJIK||q.cat===MO||q.cat===SIL);
+  const deepRows=deep.map(q=>{
+    let cz='-';if(q.cause){cz=q.cause.startsWith('S::')?q.cause.split('::')[2]:q.cause.slice(3);}
+    const meta=q.cat===SIL?'실수 — '+cz:(q.cat===JJIK?'찍음 — '+cz:'모름 — '+cz);
+    return `<tr><td>${q.n}</td><td>${q.p}</td><td>${q.cat}</td><td>${q.area||'-'}</td><td class="l">${q.type||'-'}</td><td class="l">${meta}</td></tr>`;
+  }).join('')||`<tr><td colspan="6" class="l" style="color:#94a3b8">찍·모·실로 표시된 문항이 없습니다.</td></tr>`;
+  // 원인 비율 by group
+  const causeCount={};deep.forEach(q=>{if(q.cause&&q.cause.startsWith('S::')){const g=q.cause.split('::')[1];causeCount[g]=(causeCount[g]||0)+1;}});
+  const jjikmo=c.cnts[찍]+c.cnts[모];
+  let causeBars='';for(const g in cfg.sig){const cnt=causeCount[g]||0;const pc=jjikmo?round(cnt/jjikmo*100):0;
+    causeBars+=`<div class="pctrow"><span style="min-width:135px">${g}</span><span class="bar"><i style="width:${pc}%"></i></span><span style="min-width:64px;text-align:right">${cnt}문항·${pc}%</span></div>`;}
+  const silCnt=c.cnts[실];const mistCount={};deep.forEach(q=>{if(q.cause&&q.cause.startsWith('M::')){const m=q.cause.slice(3);mistCount[m]=(mistCount[m]||0)+1;}});
+  let silBars='';cfg.mist.forEach(m=>{const cnt=mistCount[m]||0;const pc=silCnt?round(cnt/silCnt*100):0;silBars+=`<div class="pctrow"><span style="min-width:135px">${m}</span><span class="bar"><i style="width:${pc}%;background:var(--red)"></i></span><span style="min-width:64px;text-align:right">${cnt}문항·${pc}%</span></div>`;});
+
+  H+=`<div class="sheet">
+   <div class="sheet-body">
+   ${rhead(monthTitle(hd)+' 메타인지 분석표',cfg,hd,name)}
+   <div class="sec-title"><span class="n">1</span>메타인지 분석</div>
+   <div class="sec-note">${name} 학생의 ${cfg.name} <b>총 ${tot}문항</b> 메타인지 분석 결과입니다.</div>
+   <ul class="summ-list">${summ}</ul>
+   <div class="sec-title" style="margin-top:18px"><span class="n">2</span>문항별 심층분석</div>
+   <div class="qtable-wrap"><table class="rtab"><tr><th>문항</th><th>배점</th><th>구분</th><th>영역</th><th>단원·유형</th><th>메타인지 분석</th></tr>${deepRows}</table></div>
+   <div class="grid2" style="margin-top:14px">
+     <div class="panel-lite"><h4>찍·모 원인 비율 (총 ${jjikmo}문항)</h4><div class="pctwrap">${causeBars||'<div class="mini">해당 없음</div>'}</div></div>
+     <div class="panel-lite"><h4>실수 유형 비율 (총 ${silCnt}문항)</h4><div class="pctwrap">${silBars||'<div class="mini">해당 없음</div>'}</div></div>
+   </div>
+   </div>
+   ${rfootband(hd,name,cfg,issuedAt)}
+  </div>`;
+
+  /* ---- 코칭 솔루션 ---- */
+  const usedGroups=new Set();deep.forEach(q=>{if(q.cause&&q.cause.startsWith('S::'))usedGroups.add(q.cause.split('::')[1]);});
+  const usedMist=new Set();deep.forEach(q=>{if(q.cause&&q.cause.startsWith('M::'))usedMist.add(q.cause.slice(3));});
+  let coachItems='';
+  if(usedGroups.size===0&&usedMist.size===0){
+    // fallback: coach on groups with most 찍/모 counts even without explicit cause → give general per weakest area
+    coachItems+=`<div class="citem"><span class="tag">학습법</span>찍·모·실 문항에 <b>원인</b>을 지정하면, 원인별 맞춤 코칭이 여기에 표시됩니다. 우선 ‘시’로 표시한 문항은 <b>반드시 다시 풀어</b> 보세요.</div>`;
+  }
+  usedGroups.forEach(g=>{const t=COACH[curSubject]&&COACH[curSubject][g];if(t)coachItems+=`<div class="citem"><span class="tag">${g}</span>${t}</div>`;});
+  usedMist.forEach(m=>{const t=COACH_MIST[m];if(t)coachItems+=`<div class="citem"><span class="tag">실수 · ${m}</span>${t}</div>`;});
+  if(c.cnts[시]>0)coachItems+=`<div class="citem"><span class="tag">시간 관리</span>‘시’ 문항 <b>${c.cnts[시]}개</b>는 실력으로 맞힐 수 있었던 문제입니다. 실전처럼 <b>시간을 재고</b> 다시 풀어 시간 배분 감각을 만드세요. 이 영역이 곧 <b>메타A(가까운 목표)</b>로 전환됩니다.</div>`;
+
+  H+=`<div class="sheet">
+   <div class="sheet-body">
+   ${rhead(monthTitle(hd)+' 메타인지 분석표',cfg,hd,name)}
+   <div class="sec-title"><span class="n">3</span>전문가 코칭 솔루션</div>
+   <div class="sec-note">황붕주 원장 메타인지 학습법에 기반한, ${name} 학생 맞춤 코칭입니다.</div>
+   <div class="coach">${coachItems}</div>
+   ${insight2026(cfg,c,{isPct,posA,targetVal,gradeInfo,name})}
+   </div>
+   ${rfootband(hd,name,cfg,issuedAt)}
+  </div>`;
+
+  /* ---- 부록: 전체 문항 응답표 ---- */
+  H+=`<div class="sheet">
+   <div class="sheet-body">
+   ${rhead('부록 · 전체 문항 응답표',cfg,hd,name)}
+   <div class="sec-note">채점·판정 원본입니다. 정답(O/X)과 확·찍·시·실·모 판정을 문항 전체에 대해 확인할 수 있습니다.</div>
+   ${appendixTable(cfg,Q)}
+   </div>
+   ${rfootband(hd,name,cfg,issuedAt)}
+  </div>`;
+
+  $('#reportOut').innerHTML=H;
+  currentReportName=(d.hd.name||'학생')+'_'+d.cfg.name;
+  document.getElementById('exportBar').style.display='flex';
+  switchView('reportView');
+  window.scrollTo(0,0);
+}
+function rhead(title,cfg,hd,name){
+  return `<div class="rhead"><div class="rtitle-wrap"><span class="eyebrow">이든 수능 메타인지 분석 보고서</span><div class="rtitle">${title}</div></div><div style="display:flex;align-items:center;gap:14px"><div class="rmeta">시험일 <b>${hd.date||'-'}</b><br>이름 <b>${name}</b></div><span class="subtag" style="background:${cfg.color}">${cfg.name}</span></div></div>`;
+}
+function rfootband(hd,name,cfg,issuedAt){
+  return `<div class="rfootband"><span class="rf-brand">이든X학원 · <b>이든 수능 메타인지 분석 시스템</b></span><span class="rf-meta">${name} · ${cfg.name}${hd.exam?' · '+hd.exam:''} &nbsp;|&nbsp; 발급 ${issuedAt}</span></div>`;
+}
+function monthTitle(hd){const m=(hd.exam||'').match(/(\d{1,2})\s*월/);return m?m[1]+'월 모의고사':'모의고사';}
+
+/* ---- 2026 입시 정보 모듈 ---- */
+function insight2026(cfg,c,ctx){
+  const base={
+   korean:'공통(독서·문학) 34문항 + 선택(화법과작문/언어와매체) 11문항, 총 45문항·100점. <b>상대평가</b>(표준점수·백분위·등급). 선택과목 유불리가 존재하므로 표준점수 흐름을 함께 봐야 합니다.',
+   math:'공통(수Ⅰ·수Ⅱ) 22문항 + 선택(미적분/기하/확률과통계) 8문항, 총 30문항·100점(단답형 30%). <b>상대평가</b>. 최상위권은 선택과목 표준점수 유불리가 큽니다.',
+   english:'듣기 17 + 독해 28, 총 45문항·100점. <b>절대평가</b>로 90점↑ 1등급, 이후 10점 간격. 등급만 맞추면 되므로 <b>안정 1~2등급 확보</b>가 전략의 핵심입니다.',
+   tamgu:'사회·과학 구분 없이 17개 과목 중 <b>최대 2과목</b> 선택, 과목당 20문항·50점(2점·3점). <b>상대평가</b>(백분위·등급). 과목 간 유불리·표준점수 보정을 고려해 조합하세요.',
+   history:'20문항·50점, <b>필수·절대평가</b>. 40점↑ 1등급, 이후 5점 간격. 대학별 최저·가산에 활용되므로 <b>1등급 안정 확보</b>가 목표입니다.',
+  };
+  let posLine='';
+  if(ctx.isPct&&ctx.targetVal!=null){
+    const gap=ctx.posA-ctx.targetVal;
+    posLine=gap>=0
+      ?`현재 <b>메타A 백분위 ${ctx.posA}</b>가 목표(${ctx.targetVal})에 도달·근접했습니다. 시·실 문항만 안정화하면 <b>합격권</b>입니다.`
+      :`메타A 백분위 ${ctx.posA} vs 목표 ${ctx.targetVal}, 격차 <b>${Math.abs(gap)}p</b>. 메타A+(잠재력)까지 끌어올릴 <b>찍·모 영역 개념 보강</b>이 필요합니다.`;
+  }else if(!ctx.isPct){
+    const g=ctx.gradeInfo.A;posLine=`시·실만 잡으면 <b>메타A 기준 ${g}등급</b> 도달이 가능합니다. ${cfg.name}는 절대평가이므로 등급컷 근처 문항의 실수 제거가 최우선입니다.`;
+  }
+  return `<div style="margin-top:18px"><div class="sec-title"><span class="n">4</span>2026학년도 입시 정보 &amp; 전략</div>
+    <div class="ins2026">
+     <h4>▹ ${cfg.name} 시험 구조 (2026 통합수능)</h4><div>${base[cfg.name==='탐구'?'tamgu':cfg.name==='한국사'?'history':cfg.name==='국어'?'korean':cfg.name==='수학'?'math':'english'] || ''}</div>
+     <h4>▹ 6·9월 평가원 활용법</h4>
+     <ul><li>평가원 모의고사는 <b>점수보다 SIGNAL</b>이 중요합니다. 이 보고서의 찍·모·실 분포를 학습플랜에 그대로 반영하세요.</li>
+      <li><b>P → 메타A → 메타A+</b> 순으로 목표를 단계화하고, 시·실(스킬영역)을 먼저 메꿔 안정 등급을 확보하세요.</li>
+      <li>수시 지원 여부 판단 시, <b>목표대학 백분위와 메타A 위치</b>를 비교해 지원선을 조정합니다.</li></ul>
+     <h4>▹ 목표대학 위치 진단</h4><div>${posLine||'목표(백분위/등급)를 입력하면 목표대학 대비 합·불 가늠 코멘트가 표시됩니다.'}</div>
+    </div></div>`;
+}
+
+/* ================= BLANK 분석표 (Tab A) ================= */
+function buildBlankSheet(){
+  const cfg=SUBJECTS[curSheet];const half=Math.ceil(cfg.totalQ/2);
+  const colRow=`<tr><th class="bn" rowspan="2">번호</th><th rowspan="2">배점</th><th rowspan="2">채점</th><th colspan="5">5단계 분석</th><th rowspan="2">원인·보완점</th></tr><tr><th>확</th><th>찍</th><th>시</th><th>실</th><th>모</th></tr>`;
+  const mkRows=(s,e)=>{let r='';for(let i=s;i<=e;i++)r+=`<tr><td class="bn">${i}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;return r;};
+  const t1=`<table class="blank"><thead>${colRow}</thead><tbody>${mkRows(1,half)}</tbody></table>`;
+  const t2=`<table class="blank"><thead>${colRow}</thead><tbody>${mkRows(half+1,cfg.totalQ)}</tbody></table>`;
+  const legend=LEGEND.map(([b,t])=>`<div><span class="lb" style="background:${b==='확'?'var(--blue)':b==='찍'?'var(--slate)':b==='시'?'var(--amber)':b==='실'?'var(--red)':'var(--slate-d)'}">${b}</span>${t}</div>`).join('');
+  // signal cards
+  let sig='';for(const g in cfg.sig){sig+=`<div class="sig-grp"><h5>${g}</h5><ul>${cfg.sig[g].map(s=>`<li>${s}</li>`).join('')}</ul></div>`;}
+  const mist=`<ul>${cfg.mist.map(m=>`<li><b>${m}</b></li>`).join('')}</ul>`;
+  const proc=PROC_Q.map(q=>`<div class="pr"><label>${q}</label><div class="ln"></div></div>`).join('');
+  $('#sheetOut').innerHTML=`<div class="paper">
+    <div class="ph-top">
+      <div><h2>${cfg.name} 메타인지 분석표</h2><div class="redp">※ 모의고사는 점수보다 분석이 중요합니다!</div></div>
+      <div class="ph-info">시험일<span></span> 이름<span></span><br>목표 대학/전공<span style="min-width:120px"></span><br>선택과목<span></span> 원점수<span style="min-width:40px"></span> 점</div>
+    </div>
+    <div class="two-col">${t1}${t2}</div>
+    <div class="legend"><b style="color:var(--navy)">📌 5단계 분석 기준</b>${legend}</div>
+    <div class="sig-cards">
+      <div class="sig-card"><div class="h">💡 심층분석 1. 찍/모 SIGNAL (약점 신호)</div><div class="sig-grid">${sig}</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="sig-card mist"><div class="h" style="color:var(--red);border-color:var(--red)">⚠️ 심층분석 2. 실 (실수 원인)</div>${mist}</div>
+        <div class="sig-card"><div class="h">📝 심층분석 3. 시험 과정 자기평가</div><div class="proc">${proc}</div></div>
+      </div>
+    </div>
+    <div class="pfoot">이든X학원</div>
+  </div>`;
+}
+
+/* ================= SAMPLE (Korean, from MetaPRO report: P70/A77/A+92) ================= */
+function loadSample(){
+  curSubject='korean';buildForm();
+  $('#subjectPills').querySelectorAll('.spill').forEach((p,i)=>p.classList.toggle('active',i===0));
+  const set=(k,v)=>{const e=$(`[data-h="${k}"]`);if(e)e.value=v;};
+  set('name','김O미');set('exam','2026학년도 6월 모의평가');set('grade','N수');set('pick','화법과 작문');set('target','중앙대 기계공학부');
+  // build a distribution matching 확32 찍3 시5 실2 모3 (=45) with 배점 to hit ~P70
+  // simplified pattern
+  const plan=[]; // cat per q
+  // 확 32, 찍3, 시5, 실2, 모3
+  const seq=[]; for(let i=0;i<32;i++)seq.push('확');for(let i=0;i<3;i++)seq.push('찍');for(let i=0;i<5;i++)seq.push('시');for(let i=0;i<2;i++)seq.push('실');for(let i=0;i<3;i++)seq.push('모');
+  // shuffle deterministically a bit
+  for(let n=1;n<=45;n++){
+    const cat=seq[n-1];
+    const r=$(`#qBody input[name="cat${n}"][value="${cat}"]`);if(r){r.checked=true;r.dispatchEvent(new Event('change'));}
+  }
+  // set some 3점 배점 (10 questions) to reach 100
+  [11,12,13,30,31,32,33,40,43,45].forEach(n=>{const s=$(`#qBody .p-sel[data-n="${n}"]`);if(s)s.value=3;});
+  updateTally();
+  $(`[data-h="targetPct"]`).value=83;
+  const proc=['전년도 독서 문제 풀어봄','75점/100점… 문학 풀면서 막힘, 멘탈 흔들림','문학 30분/화작 20분… 문학에 시간 많이 소요','문학 개념 재정리 + 20분 안에 푸는 훈련, EBS 수특·수완'];
+  $('#processFields').querySelectorAll('[data-p]').forEach(i=>i.value=proc[+i.dataset.p]);
+  alert('국어 샘플을 채웠습니다. ‘보고서 생성 ▶’을 눌러보세요. (원인을 지정하면 코칭이 더 풍부해집니다)');
+}
+function clearForm(){buildForm();const sd=document.getElementById('studentDone');if(sd)sd.innerHTML='';}
+
+/* ================= VIEW / THEME ================= */
+function switchView(v){
+  document.querySelectorAll('#app .view').forEach(x=>x.classList.remove('active'));
+  const t=document.getElementById(v);if(t)t.classList.add('active');
+  document.querySelectorAll('#navTabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  if(v==='sheetView')buildBlankSheet();
+  if(v==='dashView')renderDash();
+  window.scrollTo(0,0);
+}
+function toggleTheme(){const r=document.documentElement;const cur=r.getAttribute('data-theme');const next=cur==='dark'?'light':cur==='light'?'dark':(matchMedia('(prefers-color-scheme:dark)').matches?'light':'dark');r.setAttribute('data-theme',next);}
+
+/* ================= CLOUD CONFIG ================= */
+/* ▼▼▼ [배포 후 1회] 아래 따옴표 안에 Google Apps Script 웹앱 URL을 붙여넣으세요 ▼▼▼
+   예: const BACKEND_URL = "https://script.google.com/macros/s/AKfycb..../exec";
+   비워두면 오프라인(로컬 저장 + 파일/코드 전송) 모드로 동작합니다. */
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxYz1ZltL4cWy9nqPqP0jBW21fQvCpVDo3TDeWXAT7t7da2VlTUDbzsVSeIWjqxo0QExA/exec";
+/* ▲▲▲ 학생 명단이 있는 구글시트 ID (명단 자동 동기화용) ▲▲▲ */
+const SHEET_ID = "1G9dX4Gni7Tau-kavyp3dP4DlX5k14wwKW-OSa1yYP48";
+/* Code.gs의 SHARED_TOKEN과 반드시 동일해야 합니다 (임의의 요청 차단용 최소 토큰) */
+const CLOUD_TOKEN = "eden2026-meta";
+
+function getBackend(){return (localStorage.getItem('eden_backend')||BACKEND_URL||'').trim();}
+function setBackend(u){localStorage.setItem('eden_backend',(u||'').trim());}
+function normPin(x){return String(x==null?'':x).replace(/[^0-9]/g,'');}
+function pinEq(a,b){a=normPin(a);b=normPin(b);return a===b||a.replace(/^0+/,'')===b.replace(/^0+/,'');}
+
+// JSONP (script 주입) — CSP 없는 호스팅(깃허브 페이지·로컬)에서 CORS 우회
+function jsonp(url,cbParam){return new Promise((res,rej)=>{const cb='edn'+Math.random().toString(36).slice(2);let done=false;
+  const s=document.createElement('script');
+  function clean(){try{delete window[cb];}catch(e){}if(s.parentNode)s.remove();}
+  window[cb]=d=>{done=true;res(d);clean();};
+  s.onerror=()=>{if(!done){clean();rej(new Error('net'));}};
+  s.src=url+(url.includes('?')?'&':'?')+(cbParam||'callback')+'='+cb;
+  document.body.appendChild(s);
+  setTimeout(()=>{if(!done){clean();rej(new Error('timeout'));}},12000);});}
+
+// 구글시트에서 명단 실시간 로드 (gviz)
+function fetchRosterLive(){return new Promise(res=>{
+  const cb='edenRoster'+Math.random().toString(36).slice(2);let done=false;
+  const s=document.createElement('script');
+  function clean(){try{delete window[cb];}catch(e){}if(s.parentNode)s.remove();}
+  window[cb]=resp=>{done=true;try{
+    const rows=(resp.table&&resp.table.rows)||[];const list=[];
+    rows.forEach(r=>{const c0=r.c[0],c1=r.c[1];
+      const nm=c0?(c0.v!=null?String(c0.v):(c0.f||'')):'';
+      const pn=c1?(c1.f!=null?c1.f:(c1.v!=null?String(c1.v):'')):'';
+      if(nm&&nm.trim()&&nm.trim()!=='이름')list.push({name:nm.trim(),pin:String(pn).trim()});});
+    res(list.length?list:null);}catch(e){res(null);}clean();};
+  s.onerror=()=>{if(!done){res(null);clean();}};
+  s.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&headers=1&gid=0`;
+  document.body.appendChild(s);
+  setTimeout(()=>{if(!done){res(null);clean();}},10000);});}
+async function refreshRosterLive(){try{const live=await fetchRosterLive();if(live&&live.length){ROSTER=live;fillLoginNames();}}catch(e){}}
+
+// 제출 업로드(쓰기) / 목록 조회(읽기)
+function cloudSubmit(rec){const url=getBackend();if(!url)return Promise.resolve(false);
+  return fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',record:rec,token:CLOUD_TOKEN})}).then(()=>true).catch(()=>false);}
+async function cloudList(){const url=getBackend();if(!url)return null;try{const d=await jsonp(url+(url.includes('?')?'&':'?')+'action=list&token='+encodeURIComponent(CLOUD_TOKEN));return (d&&d.records)||[];}catch(e){return null;}}
+
+/* ================= AUTH / ROSTER ================= */
+const ADMIN_ID='eden2026';
+let ROSTER=[
+ {name:'김유성',pin:'505600'},{name:'김지우',pin:'965802'},{name:'김진우',pin:'293400'},
+ {name:'박민균',pin:'499500'},{name:'박주혁',pin:'296500'},{name:'박준혁',pin:'283700'},
+ {name:'박준혁(H)',pin:'141600'},{name:'손은지',pin:'790500'},{name:'손지예',pin:'149700'},
+ {name:'손태영',pin:'910600'},{name:'이민욱',pin:'039800'},{name:'이서윤',pin:'795400'},
+ {name:'이성현',pin:'780900'},{name:'이수연',pin:'095400'},{name:'이윤재',pin:'951100'},
+ {name:'이재훈',pin:'095400'},{name:'임도윤',pin:'157600'},{name:'장다연',pin:'267200'},
+ {name:'장은서',pin:'391700'},{name:'전혜리',pin:'718900'},{name:'정가온',pin:'062200'},
+ {name:'조승훈',pin:'144300'},{name:'최시온',pin:'773900'},{name:'황혜암',pin:'281700'},
+];
+let session=null, loginRole='student', currentReportName='보고서', lastStudentRec=null, dashRecs=[];
+
+function setLoginRole(r){loginRole=r;
+  document.getElementById('rtStudent').classList.toggle('active',r==='student');
+  document.getElementById('rtAdmin').classList.toggle('active',r==='admin');
+  document.getElementById('studentLogin').style.display=r==='student'?'block':'none';
+  document.getElementById('adminLogin').style.display=r==='admin'?'block':'none';
+  document.getElementById('lgErr').textContent='';
+}
+function fillLoginNames(){ /* 명단은 검증용으로만 사용 — 목록을 화면에 노출하지 않음(개인정보 보호) */ }
+function doLogin(){
+  const err=document.getElementById('lgErr');err.textContent='';
+  if(loginRole==='admin'){
+    const id=document.getElementById('lgAdmin').value.trim();
+    if(id!==ADMIN_ID){err.textContent='관리자 아이디가 올바르지 않습니다.';return;}
+    session={role:'admin',name:'관리자'};
+  }else{
+    const nm=document.getElementById('lgName').value.trim();const pin=document.getElementById('lgPin').value.trim();
+    if(!nm||!pin){err.textContent='이름과 비밀번호를 모두 입력해 주세요.';return;}
+    const found=ROSTER.find(r=>r.name.trim()===nm && pinEq(r.pin,pin));
+    if(!found){err.textContent='이름 또는 비밀번호를 다시 확인해 주세요.';return;}
+    session={role:'student',name:found.name};
+  }
+  localStorage.setItem('eden_session',JSON.stringify(session));
+  enterApp();
+}
+function logout(){localStorage.removeItem('eden_session');location.reload();}
+function enterApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.body.setAttribute('data-role',session.role);
+  document.getElementById('roleTag').textContent=session.role==='admin'?'관리자 모드 · 이든X학원':('학생 · '+session.name);
+  buildNav();
+  curSubject='korean';buildForm();
+  if(session.role==='student'){fillStudentIdentity();switchView('inputView');}
+  else{switchView('dashView');}
+}
+function fillStudentIdentity(){const n=document.querySelector('#inputView [data-h="name"]');if(n){n.value=session.name;n.readOnly=true;n.style.background='var(--soft-2)';}}
+
+const NAV={
+ student:[['inputView','📝 시험결과 입력']],
+ admin:[['dashView','👥 학생 기록'],['inputView','✍️ 새 기록 입력'],['sheetView','📄 분석표 서식']],
+};
+function buildNav(){const host=$('#navTabs');host.innerHTML='';NAV[session.role].forEach(([v,label],i)=>{const b=el('button','tab'+(i===0?' active':''),label);b.dataset.view=v;b.onclick=()=>switchView(v);host.appendChild(b);});}
+
+/* ================= RECORDS STORE ================= */
+function loadRecords(){try{return JSON.parse(localStorage.getItem('eden_records')||'[]');}catch(e){return[];}}
+function storeRecords(a){localStorage.setItem('eden_records',JSON.stringify(a));}
+function saveRecord(rec){const a=loadRecords();const i=a.findIndex(r=>r.id===rec.id);if(i>=0)a[i]=rec;else a.push(rec);storeRecords(a);}
+function deleteRecordAt(i){const r=dashRecs[i];if(!r)return;storeRecords(loadRecords().filter(x=>x.id!==r.id));renderDash();}
+function clearAllRecords(){if(confirm('모든 제출 기록을 삭제할까요? (되돌릴 수 없습니다)')){storeRecords([]);renderDash();}}
+function recordFromData(d){
+  return {id:[d.subject,d.hd.name||'',d.hd.exam||'',d.hd.date||''].join('|'),
+    name:d.hd.name||'',subject:d.subject,hd:d.hd,proc:d.proc,pctIn:d.pctIn,Q:d.Q,cuts:d.cuts,
+    savedAt:new Date().toISOString()};
+}
+function dataFromRecord(rec){return {cfg:SUBJECTS[rec.subject],subject:rec.subject,hd:rec.hd||{},proc:rec.proc||[],pctIn:rec.pctIn||{},Q:rec.Q||[],cuts:rec.cuts||[]};}
+
+/* ================= STUDENT SUBMIT ================= */
+function submitRecord(){
+  const d=collect();const c=compute(d);
+  if(c.answered===0){alert('문항의 5단계(확·찍·시·실·모)를 하나 이상 선택해 주세요.');return;}
+  if(!d.hd.exam){if(!confirm('시험명이 비어 있습니다. 그래도 제출할까요?'))return;}
+  d.hd.name=session?session.name:d.hd.name;
+  const rec=recordFromData(d);
+  rec.summary={raw:c.raw,P:c.P,A:c.A,AP:c.AP,cnts:c.cnts};
+  saveRecord(rec);lastStudentRec=rec;
+  renderStudentDone(rec);
+  if(getBackend())cloudSubmit(rec).then(ok=>{const b=document.getElementById('cloudSubmitMsg');if(b)b.textContent=ok?'☁ 클라우드에 자동 전송되었습니다.':'⚠ 클라우드 전송 실패 — 아래 파일/코드로 전달하세요.';});
+}
+function renderStudentDone(rec){
+  const box=document.getElementById('studentDone');
+  box.innerHTML=`<div class="done-box"><div class="ic">✅</div><h2>제출이 완료되었습니다!</h2>
+    <p><b>${rec.name}</b> 학생 · ${SUBJECTS[rec.subject].name} · 원점수 <b>${rec.summary.raw}점</b><br>
+    선생님(관리자)이 분석 보고서를 생성해 전달해 드립니다.</p>
+    <div class="done-actions">
+      <button class="btn btn-ghost" onclick="downloadStudentFile()">📁 결과 파일 저장</button>
+      <button class="btn btn-ghost" onclick="copyStudentCode()">🔑 제출 코드 복사</button>
+    </div>
+    <p class="hint" id="cloudSubmitMsg" style="margin-top:10px;font-weight:700;color:var(--navy)">${getBackend()?'☁ 클라우드로 전송 중…':''}</p>
+    <p class="hint" style="margin-top:4px">클라우드 연동 시 선생님이 자동으로 받습니다. 미연동 시 위 파일/코드를 전달하세요.</p></div>`;
+  box.scrollIntoView({behavior:'smooth'});
+}
+function downloadStudentFile(){if(!lastStudentRec)return;downloadFile((lastStudentRec.name||'학생')+'_'+SUBJECTS[lastStudentRec.subject].name+'_제출.json',JSON.stringify(lastStudentRec),'application/json');}
+function copyStudentCode(){if(!lastStudentRec)return;const code=encodeRec(lastStudentRec);navigator.clipboard&&navigator.clipboard.writeText(code).then(()=>alert('제출 코드가 복사되었습니다. 선생님께 전달하세요.'),()=>prompt('아래 코드를 복사해 전달하세요:',code));}
+
+/* ================= CLOUD SETTINGS ================= */
+function updateCloudStatus(state){const e=document.getElementById('cloudStatus');if(!e)return;
+  if(!getBackend()){e.innerHTML='<span style="color:var(--muted)">○ 오프라인(로컬)</span>';return;}
+  if(state==='fail'){e.innerHTML='<span style="color:var(--red)">● 연결 실패 — URL 확인</span>';return;}
+  e.innerHTML='<span style="color:var(--ok)">● 클라우드 연동됨</span>';}
+function cloudSettings(){
+  const cur=getBackend();
+  const u=prompt('Google Apps Script 웹앱 URL을 붙여넣으세요.\n(비우고 저장하면 오프라인 모드)\n\n설정 방법은 함께 드린 「이든_클라우드_설정안내」 문서를 참고하세요.',cur);
+  if(u===null)return;setBackend(u);updateCloudStatus();renderDash();
+  alert(u.trim()?'클라우드 연동이 설정되었습니다. 목록을 동기화합니다.':'오프라인(로컬) 모드로 전환되었습니다.');
+}
+
+/* ================= ADMIN DASHBOARD ================= */
+async function renderDash(){
+  updateCloudStatus();
+  let recs=loadRecords();
+  const url=getBackend();
+  if(url){
+    const cs=document.getElementById('cloudStatus');if(cs)cs.innerHTML='<span style="color:var(--amber)">● 동기화 중…</span>';
+    const cloud=await cloudList();
+    if(cloud){const map={};[...recs,...cloud].forEach(r=>{if(r&&r.id)map[r.id]=r;});recs=Object.values(map);storeRecords(recs);}
+    updateCloudStatus(cloud?null:'fail');
+  }
+  dashRecs=recs.sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||''));
+  document.getElementById('stRecords').textContent=dashRecs.length;
+  document.getElementById('stStudents').textContent=new Set(dashRecs.map(r=>r.name)).size;
+  const host=document.getElementById('dashList');
+  if(!dashRecs.length){host.innerHTML='<div class="empty">아직 제출된 기록이 없습니다.<div class="hint" style="margin-top:6px">학생이 로그인해 결과를 제출하거나, 파일/코드로 기록을 불러오세요. ‘새 기록 입력’에서 직접 입력도 가능합니다.</div></div>';return;}
+  let h='<div class="qtable-wrap"><table class="rec-table"><thead><tr><th>이름</th><th>과목</th><th>시험명</th><th>시험일</th><th>원점수</th><th>P / 메타A</th><th>제출일</th><th>관리</th></tr></thead><tbody>';
+  dashRecs.forEach((r,i)=>{const cfg=SUBJECTS[r.subject]||{name:r.subject,color:'#64748b'};const s=r.summary||{};
+    h+=`<tr>
+      <td><b>${r.name||'-'}</b></td>
+      <td><span class="subject-chip" style="background:${cfg.color}">${cfg.name}</span></td>
+      <td>${(r.hd&&r.hd.exam)||'-'}</td>
+      <td>${(r.hd&&r.hd.date)||'-'}</td>
+      <td class="num">${s.raw??'-'}</td>
+      <td class="num">${s.P??'-'} / ${s.A??'-'}</td>
+      <td class="mini">${(r.savedAt||'').slice(0,10)}</td>
+      <td style="white-space:nowrap">
+        <button class="mini-btn solid" onclick="openReport(${i})">보고서</button>
+        <button class="mini-btn" onclick="editRecord(${i})">보기·편집</button>
+        <button class="mini-btn danger" onclick="deleteRecordAt(${i})">삭제</button>
+      </td></tr>`;
+  });
+  h+='</tbody></table></div>';host.innerHTML=h;
+}
+function openReport(i){const r=dashRecs[i];if(!r)return;generate(dataFromRecord(r));}
+function editRecord(i){const r=dashRecs[i];if(!r)return;loadRecordIntoForm(r);switchView('inputView');}
+function loadRecordIntoForm(rec){
+  curSubject=rec.subject;buildForm();
+  $('#subjectPills').querySelectorAll('.spill').forEach((p,idx)=>p.classList.toggle('active',Object.keys(SUBJECTS)[idx]===rec.subject));
+  for(const k in (rec.hd||{})){const e=document.querySelector('#inputView [data-h="'+k+'"]');if(e)e.value=rec.hd[k];}
+  populateDanwon();
+  (rec.proc||[]).forEach((v,i)=>{const e=document.querySelector('[data-p="'+i+'"]');if(e)e.value=v||'';});
+  for(const k in (rec.pctIn||{})){const e=document.querySelector('[data-pct="'+k+'"]');if(e)e.value=rec.pctIn[k];}
+  (rec.cuts||[]).forEach((v,i)=>{const e=document.querySelector('[data-cut="'+i+'"]');if(e)e.value=v||'';});
+  (rec.Q||[]).forEach(q=>{
+    const tr=document.querySelector('#qBody tr[data-row="'+q.n+'"]');if(!tr)return;
+    const ps=tr.querySelector('.p-sel');if(ps&&q.p)ps.value=q.p;
+    if(q.cat){const rr=tr.querySelector('input[name="cat'+q.n+'"][value="'+q.cat+'"]');if(rr){rr.checked=true;rr.dispatchEvent(new Event('change'));}}
+    const ae=tr.querySelector('.area-sel,.area-free');if(ae&&q.area)ae.value=q.area;
+    const ty=tr.querySelector('.type-in[data-n="'+q.n+'"]');if(ty&&q.type)ty.value=q.type;
+    const cz=tr.querySelector('.cause-sel');if(cz&&q.cause)cz.value=q.cause;
+  });
+  updateTally();
+}
+
+/* ================= IMPORT / EXPORT / SHARE ================= */
+function downloadFile(name,content,mime){const b=new Blob([content],{type:mime||'text/plain;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function encodeRec(rec){return btoa(unescape(encodeURIComponent(JSON.stringify(rec))));}
+function decodeRec(str){return JSON.parse(decodeURIComponent(escape(atob(str.trim()))));}
+function importFromFile(ev){const f=ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{const data=JSON.parse(rd.result);const arr=Array.isArray(data)?data:[data];let n=0;
+    arr.forEach(r=>{if(r&&r.subject&&r.Q){if(!r.id)r.id='r'+Date.now()+Math.random().toString(36).slice(2,5);if(!r.name)r.name=(r.hd&&r.hd.name)||'미상';saveRecord(r);n++;}});
+    renderDash();alert(n+'건의 기록을 불러왔습니다.');}catch(e){alert('파일을 읽을 수 없습니다: '+e.message);}ev.target.value='';};
+  rd.readAsText(f);}
+function importFromCode(){const code=prompt('학생에게 받은 제출 코드를 붙여넣으세요:');if(!code)return;try{const r=decodeRec(code);if(!r.subject||!r.Q)throw 0;if(!r.id)r.id='r'+Date.now();if(!r.name)r.name=(r.hd&&r.hd.name)||'미상';saveRecord(r);renderDash();alert((r.name||'학생')+' 기록을 불러왔습니다.');}catch(e){alert('코드를 해석할 수 없습니다.');}}
+function buildReportHTML(){
+  const styles=[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
+  const body=document.getElementById('reportOut').innerHTML;
+  const name=currentReportName||'메타인지 분석 보고서';
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+name+' 메타인지 분석 보고서</title><style>'+styles+'</style></head><body style="background:#fff;padding:16px"><div class="wrap" style="max-width:900px;margin:0 auto">'+body+'</div></body></html>';
+}
+function exportReportHTML(){downloadFile((currentReportName||'보고서')+'_메타인지분석보고서.html',buildReportHTML(),'text/html;charset=utf-8');}
+async function shareReport(){
+  const name=(currentReportName||'보고서')+'_메타인지분석보고서.html';
+  const html=buildReportHTML();
+  try{const file=new File([html],name,{type:'text/html'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'이든 메타인지 분석 보고서'});return;}}catch(e){}
+  exportReportHTML();
+  alert('HTML 보고서를 저장했습니다. 카카오톡·메일로 학생에게 전달하세요.\n(PDF가 필요하면 ‘PDF 인쇄/저장’을 사용하세요.)');
+}
+
+/* ================= INIT ================= */
+buildPills();fillLoginNames();refreshRosterLive();
+const _saved=localStorage.getItem('eden_session');
+if(_saved){try{session=JSON.parse(_saved);enterApp();}catch(e){}}
+</script>
