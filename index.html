@@ -1217,9 +1217,18 @@ function switchView(v){
   const t=document.getElementById(v);if(t)t.classList.add('active');
   document.querySelectorAll('#navTabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   if(v==='sheetView')buildBlankSheet();
-  if(v==='dashView')renderDash();
+  if(v==='dashView'){renderDash();startDashAutoRefresh();}
+  else stopDashAutoRefresh();
   window.scrollTo(0,0);
 }
+let _dashTimer=null;
+function startDashAutoRefresh(){
+  stopDashAutoRefresh();
+  if(!getBackend())return;
+  // 다른 컴퓨터에서 제출된 기록을 관리자가 별도 조작 없이도 볼 수 있도록 주기적으로 클라우드와 동기화
+  _dashTimer=setInterval(()=>{if(document.getElementById('dashView').classList.contains('active'))renderDash();},30000);
+}
+function stopDashAutoRefresh(){if(_dashTimer){clearInterval(_dashTimer);_dashTimer=null;}}
 function toggleTheme(){const r=document.documentElement;const cur=r.getAttribute('data-theme');const next=cur==='dark'?'light':cur==='light'?'dark':(matchMedia('(prefers-color-scheme:dark)').matches?'light':'dark');r.setAttribute('data-theme',next);}
 
 /* ================= CLOUD CONFIG ================= */
@@ -1266,9 +1275,25 @@ function fetchRosterLive(){return new Promise(res=>{
 async function refreshRosterLive(){try{const live=await fetchRosterLive();if(live&&live.length){ROSTER=live;fillLoginNames();}}catch(e){}}
 
 // 제출 업로드(쓰기) / 목록 조회(읽기)
+// no-cors 모드는 응답을 읽을 수 없어 네트워크만 통했으면 항상 성공으로 보이므로,
+// 업로드 직후 클라우드 목록을 다시 읽어 해당 기록 id가 실제로 존재하는지 확인한다.
 function cloudSubmit(rec){const url=getBackend();if(!url)return Promise.resolve(false);
-  return fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',record:rec,token:CLOUD_TOKEN})}).then(()=>true).catch(()=>false);}
+  return fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submit',record:rec,token:CLOUD_TOKEN})})
+    .then(()=>cloudList())
+    .then(list=>!!(list&&list.some(r=>r&&r.id===rec.id)))
+    .catch(()=>false);}
 async function cloudList(){const url=getBackend();if(!url)return null;try{const d=await jsonp(url+(url.includes('?')?'&':'?')+'action=list&token='+encodeURIComponent(CLOUD_TOKEN));return (d&&d.records)||[];}catch(e){return null;}}
+
+// 아직 클라우드로 전송 확인이 안 된 로컬 기록을 백그라운드로 재시도 전송
+async function syncPendingRecords(){
+  const url=getBackend();if(!url)return;
+  const recs=loadRecords();const pending=recs.filter(r=>r&&!r.synced);
+  if(!pending.length)return;
+  for(const r of pending){
+    try{const ok=await cloudSubmit(r);if(ok){r.synced=true;}}catch(e){}
+  }
+  storeRecords(recs);
+}
 
 /* ================= AUTH / ROSTER ================= */
 const ADMIN_ID='eden2026';
@@ -1316,8 +1341,8 @@ function enterApp(){
   document.getElementById('roleTag').textContent=session.role==='admin'?'관리자 모드 · 이든관리형학습센터·이든X학원':('학생 · '+session.name);
   buildNav();
   curSubject='korean';buildForm();
-  if(session.role==='student'){fillStudentIdentity();switchView('inputView');}
-  else{switchView('dashView');}
+  if(session.role==='student'){fillStudentIdentity();switchView('inputView');syncPendingRecords();}
+  else{switchView('dashView');startDashAutoRefresh();}
 }
 function fillStudentIdentity(){const n=document.querySelector('#inputView [data-h="name"]');if(n){n.value=session.name;n.readOnly=true;n.style.background='var(--soft-2)';}}
 
@@ -1350,7 +1375,13 @@ function submitRecord(){
   rec.summary={raw:c.raw,P:c.P,A:c.A,AP:c.AP,cnts:c.cnts};
   saveRecord(rec);lastStudentRec=rec;
   renderStudentDone(rec);
-  if(getBackend())cloudSubmit(rec).then(ok=>{const b=document.getElementById('cloudSubmitMsg');if(b)b.textContent=ok?'☁ 클라우드에 자동 전송되었습니다.':'⚠ 클라우드 전송 실패 — 아래 파일/코드로 전달하세요.';});
+  if(getBackend()){
+    cloudSubmit(rec).then(ok=>{
+      if(ok){rec.synced=true;saveRecord(rec);}
+      const b=document.getElementById('cloudSubmitMsg');
+      if(b)b.textContent=ok?'☁ 클라우드에 전송 완료 — 관리자가 다른 컴퓨터에서도 확인할 수 있습니다.':'⚠ 클라우드 전송 확인 실패 — 인터넷 연결 확인 후 자동 재시도됩니다. (파일/코드로도 전달 가능)';
+    });
+  }
 }
 function renderStudentDone(rec){
   const box=document.getElementById('studentDone');
